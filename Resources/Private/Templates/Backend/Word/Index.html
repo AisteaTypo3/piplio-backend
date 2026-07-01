@@ -1,0 +1,169 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:flashMessages />
+
+<div class="px-3 py-3 px-xl-4">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+        <div>
+            <h2 class="h4 mb-1">Piplio Daten</h2>
+            <p class="text-muted mb-0">Backend-Uebersicht fuer die Wortdaten, die spaeter per API an die Piplio App geliefert werden.</p>
+        </div>
+        <div class="text-muted small">
+            API-Basis: <code>/api/piplio/words</code>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Datensaetze gesamt</div>
+                    <div class="display-6">{stats.total}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Sichtbar in API</div>
+                    <div class="display-6 text-success">{stats.visible}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Versteckt</div>
+                    <div class="display-6 text-warning">{stats.hidden}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <strong>Nach Thema</strong>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <f:for each="{stats.topics}" as="item">
+                            <span class="badge badge-light border text-dark">{item.label}: {item.count}</span>
+                        </f:for>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <strong>Nach Schwierigkeitsgrad</strong>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <f:for each="{stats.difficulties}" as="item">
+                            <span class="badge badge-light border text-dark">{item.label}: {item.count}</span>
+                        </f:for>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Filter</strong>
+        </div>
+        <div class="card-body">
+            <f:form action="index" method="post" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label">Thema</label>
+                    <f:form.select name="topic" options="{topicOptions}" optionValueField="value" optionLabelField="label" value="{filters.topic}" class="form-select" />
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label">Level</label>
+                    <f:form.select name="difficulty" options="{difficultyOptions}" optionValueField="value" optionLabelField="label" value="{filters.difficulty}" class="form-select" />
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label">Suche</label>
+                    <f:form.textfield name="q" value="{filters.q}" class="form-control" placeholder="Wort suchen" />
+                </div>
+                <div class="col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">Filtern</button>
+                    <f:link.action action="index" class="btn btn-default">Reset</f:link.action>
+                </div>
+            </f:form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>API Beispiele</strong>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-column gap-2">
+                <f:for each="{apiExamples}" as="example">
+                    <code>{example}</code>
+                </f:for>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <strong>Wortdaten</strong>
+            <span class="text-muted small">{rows -> f:count()} Treffer</span>
+        </div>
+        <div class="card-body p-0">
+            <f:if condition="{rows -> f:count()} > 0">
+                <f:then>
+                    <div class="table-fit">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Wort</th>
+                                    <th>Thema</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                    <th>PID</th>
+                                    <th>Aktualisiert</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <f:for each="{rows}" as="row">
+                                    <tr>
+                                        <td>
+                                            <strong>{row.word}</strong>
+                                        </td>
+                                        <td>{row.topicLabel}</td>
+                                        <td>{row.difficultyLabel}</td>
+                                        <td>
+                                            <span class="badge badge-{f:if(condition: row.isHidden, then: 'warning', else: 'success')}">
+                                                {row.statusLabel}
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted">{row.details}</td>
+                                        <td>{row.pid}</td>
+                                        <td class="text-nowrap small">
+                                            <f:format.date format="d.m.Y H:i">{row.updatedAt}</f:format.date>
+                                        </td>
+                                    </tr>
+                                </f:for>
+                            </tbody>
+                        </table>
+                    </div>
+                </f:then>
+                <f:else>
+                    <div class="p-4 text-muted">
+                        Keine Datensaetze fuer die aktuellen Filter gefunden.
+                    </div>
+                </f:else>
+            </f:if>
+        </div>
+    </div>
+</div>
+</html>
