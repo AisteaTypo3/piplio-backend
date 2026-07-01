@@ -9,6 +9,9 @@ return [
         'crdate'           => 'crdate',
         'delete'           => 'deleted',
         'enablecolumns'    => ['disabled' => 'hidden'],
+        'security'         => [
+            'ignorePageTypeRestriction' => true,
+        ],
         'searchFields'     => 'word,plural_form',
         'iconfile'         => 'EXT:piplio_backend/Resources/Public/Icons/Extension.svg',
         'default_sortby'   => 'topic ASC, difficulty ASC, word ASC',
