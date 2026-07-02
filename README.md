@@ -6,12 +6,14 @@ The extension provides:
 
 - a backend module for content overview
 - a custom database table for learning words and related metadata
+- a TYPO3 frontend plugin for a floating interest widget with TYPO3 lead storage
 - a protected API endpoint for app access
 - a CLI seed command for initial data
 
 ## Features
 
 - Manage word data in TYPO3
+- Collect name/email interest leads directly in TYPO3 without newsletter dispatch
 - Filtered API for app requests by `topic` and `difficulty`
 - API key protection via TYPO3 Extension Settings
 - Support for multiple learning types:
@@ -90,6 +92,7 @@ After installing the package:
 2. Run database schema updates in the Install Tool.
 3. Clear TYPO3 caches.
 4. Open Extension Settings and configure the API key.
+5. Configure `interestStoragePid` if leads should be stored on a dedicated sysfolder/page. If left at `0`, leads are stored on the page where the frontend plugin is placed.
 
 ## Extension Settings
 
@@ -98,8 +101,9 @@ The API key is configured via TYPO3 Extension Settings.
 Field:
 
 - `apiKey`
+- `interestStoragePid`
 
-This value is read by the middleware and checked on every API request.
+These values are read by the extension for API access and lead storage.
 
 Important:
 
@@ -115,6 +119,8 @@ The module shows:
 
 - total number of records
 - visible vs hidden records
+- total number of stored interest leads
+- the latest frontend interest entries
 - counts by topic
 - counts by difficulty
 - filter options
@@ -128,6 +134,15 @@ Use this module to inspect the current dataset quickly.
 The extension stores data in:
 
 - `tx_pipliobackend_word`
+- `tx_pipliobackend_interest`
+
+Interest fields:
+
+- `name`
+- `email`
+- `page_title`
+- `page_url`
+- `source_page_id`
 
 Main fields:
 
@@ -144,6 +159,12 @@ Main fields:
 - `hidden`
 
 ## API
+
+### Frontend Plugin
+
+The extension now includes the frontend plugin `Piplio Interesse Widget`.
+
+Place it on a page as a normal TYPO3 plugin content element. It renders a fixed widget on the right side with a name/email form and stores the submitted leads in `tx_pipliobackend_interest`.
 
 ### Endpoints
 

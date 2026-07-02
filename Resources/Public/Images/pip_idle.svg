@@ -1,0 +1,26 @@
+<svg width="110" height="130" viewBox="0 0 110 130" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pip_body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A07CFF"/>
+      <stop offset="1" stop-color="#5B30CC"/>
+    </linearGradient>
+    <linearGradient id="pip_antenna" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE066"/>
+      <stop offset="1" stop-color="#FF9F1C"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="55" cy="117" rx="27" ry="5" fill="rgba(80,40,180,0.15)"/>
+  <path d="M 55 24 L 55 33" stroke="#7C4FFF" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="55" cy="17" r="9" fill="url(#pip_antenna)"/>
+  <circle cx="55" cy="17" r="4.5" fill="#FF7A00"/>
+  <circle cx="52" cy="14" r="2.5" fill="white" opacity="0.65"/>
+  <circle cx="55" cy="68" r="45" fill="url(#pip_body)"/>
+  <ellipse cx="42" cy="50" rx="14" ry="8" fill="white" opacity="0.18" transform="rotate(-25 42 50)"/>
+  <circle cx="38" cy="62" r="11" fill="white"/>
+  <circle cx="72" cy="62" r="11" fill="white"/>
+  <circle cx="39" cy="61" r="5.5" fill="#2D2557"/>
+  <circle cx="73" cy="61" r="5.5" fill="#2D2557"/>
+  <circle cx="42" cy="57" r="2.2" fill="white"/>
+  <circle cx="76" cy="57" r="2.2" fill="white"/>
+  <path d="M 40 84 Q 55 93 70 84" stroke="#2D2557" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>

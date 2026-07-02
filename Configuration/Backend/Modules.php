@@ -17,7 +17,7 @@ return [
         ],
         'extensionName' => 'PiplioBackend',
         'controllerActions' => [
-            WordModuleController::class => ['index'],
+            WordModuleController::class => ['index', 'exportInterests', 'deleteInterest'],
         ],
     ],
 ];

@@ -43,6 +43,145 @@
     </div>
 
     <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Interesse-Eintraege gesamt</div>
+                    <div class="display-6">{interestStats.total}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Letzte 24h</div>
+                    <div class="display-6 text-primary">{interestStats.last24Hours}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Letzte 7 Tage</div>
+                    <div class="display-6 text-info">{interestStats.last7Days}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <strong>Top Seiten</strong>
+                </div>
+                <div class="card-body">
+                    <f:if condition="{topInterestPages -> f:count()} > 0">
+                        <f:then>
+                            <div class="d-flex flex-column gap-3">
+                                <f:for each="{topInterestPages}" as="page">
+                                    <div>
+                                        <div class="d-flex justify-content-between gap-3">
+                                            <strong>{page.pageTitle}</strong>
+                                            <span class="badge badge-light border text-dark">{page.leadCount}</span>
+                                        </div>
+                                        <div class="small text-muted">
+                                            PID {page.sourcePageId}
+                                            <f:if condition="{page.pageUrl}">
+                                                • <a href="{page.pageUrl}" target="_blank" rel="noreferrer">{page.pageUrl}</a>
+                                            </f:if>
+                                        </div>
+                                    </div>
+                                </f:for>
+                            </div>
+                        </f:then>
+                        <f:else>
+                            <div class="text-muted small">Noch keine Quellseiten mit Leads vorhanden.</div>
+                        </f:else>
+                    </f:if>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <strong>Neueste Interessenten</strong>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">{recentInterests -> f:count()} Eintraege</span>
+                        <f:link.action action="exportInterests" class="btn btn-sm btn-default">
+                            Export CSV
+                        </f:link.action>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <f:if condition="{recentInterests -> f:count()} > 0">
+                        <f:then>
+                            <div class="table-fit">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>E-Mail</th>
+                                            <th>Quelle</th>
+                                            <th>Consent</th>
+                                            <th>Erfasst</th>
+                                            <th class="text-end">Aktionen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <f:for each="{recentInterests}" as="interest">
+                                            <tr>
+                                                <td>{interest.name}</td>
+                                                <td><a href="mailto:{interest.email}">{interest.email}</a></td>
+                                                <td>
+                                                    <div>{interest.pageTitle}</div>
+                                                    <div class="small text-muted">
+                                                        <f:if condition="{interest.pageUrl}">
+                                                            <a href="{interest.pageUrl}" target="_blank" rel="noreferrer">{interest.pageUrl}</a>
+                                                        </f:if>
+                                                    </div>
+                                                </td>
+                                                <td class="small text-nowrap">
+                                                    <div>{interest.privacyVersion}</div>
+                                                    <div class="text-muted">
+                                                        <f:if condition="{interest.consentTimestamp}">
+                                                            <f:format.date format="d.m.Y H:i">{interest.consentTimestamp}</f:format.date>
+                                                        </f:if>
+                                                    </div>
+                                                </td>
+                                                <td class="text-nowrap small">
+                                                    <f:format.date format="d.m.Y H:i">{interest.createdAt}</f:format.date>
+                                                </td>
+                                                <td class="text-end">
+                                                    <f:form action="deleteInterest" method="post" class="d-inline">
+                                                        <f:form.hidden name="interestUid" value="{interest.uid}" />
+                                                        <button
+                                                            type="submit"
+                                                            class="btn btn-sm btn-danger"
+                                                            onclick="return confirm('Eintrag wirklich loeschen?');"
+                                                        >
+                                                            Loeschen
+                                                        </button>
+                                                    </f:form>
+                                                </td>
+                                            </tr>
+                                        </f:for>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </f:then>
+                        <f:else>
+                            <div class="p-4 text-muted">
+                                Bisher wurden noch keine Interessenten gespeichert.
+                            </div>
+                        </f:else>
+                    </f:if>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header">

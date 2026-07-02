@@ -7,7 +7,9 @@ namespace Aistea\PiplioBackend\Controller\Backend;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
@@ -27,10 +29,6 @@ final class WordModuleController extends ActionController
         'hard' => 'Schwer',
     ];
 
-    public function __construct(
-        private readonly ModuleTemplateFactory $moduleTemplateFactory,
-    ) {}
-
     public function indexAction(string $topic = '', string $difficulty = '', string $q = ''): ResponseInterface
     {
         $filters = [
@@ -39,7 +37,7 @@ final class WordModuleController extends ActionController
             'q' => trim($q),
         ];
 
-        $moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+        $moduleTemplate = $this->getModuleTemplateFactory()->create($this->request);
         $moduleTemplate->setTitle('Piplio Daten');
 
         $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
@@ -51,13 +49,99 @@ final class WordModuleController extends ActionController
         $moduleTemplate->assignMultiple([
             'filters' => $filters,
             'stats' => $this->buildStats(),
+            'interestStats' => $this->buildInterestStats(),
+            'topInterestPages' => $this->findTopInterestPages(),
             'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], 'Alle Themen'),
             'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], 'Alle Level'),
             'rows' => $this->findWords($filters),
+            'recentInterests' => $this->findRecentInterests(),
             'apiExamples' => $this->buildApiExamples(),
         ]);
 
         return $moduleTemplate->renderResponse('Backend/Word/Index');
+    }
+
+    public function exportInterestsAction(): ResponseInterface
+    {
+        $rows = $this->findInterestsForExport();
+        $handle = fopen('php://temp', 'r+');
+        if ($handle === false) {
+            throw new \RuntimeException('Unable to create temporary export stream.', 1751566501);
+        }
+
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, [
+            'uid',
+            'name',
+            'email',
+            'page_title',
+            'page_url',
+            'source_page_id',
+            'privacy_version',
+            'consent_timestamp',
+            'created_at',
+            'hidden',
+        ], ';');
+
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row['uid'],
+                $row['name'],
+                $row['email'],
+                $row['page_title'],
+                $row['page_url'],
+                $row['source_page_id'],
+                $row['privacy_version'],
+                $row['consent_timestamp'] > 0 ? date('c', (int)$row['consent_timestamp']) : '',
+                $row['crdate'] > 0 ? date('c', (int)$row['crdate']) : '',
+                (int)$row['hidden'],
+            ], ';');
+        }
+
+        rewind($handle);
+        $csv = (string)stream_get_contents($handle);
+        fclose($handle);
+
+        $response = $this->getResponseFactory()->createResponse(200)
+            ->withHeader('Content-Type', 'text/csv; charset=utf-8')
+            ->withHeader('Content-Disposition', 'attachment; filename="piplio-interest-export.csv"');
+
+        $response->getBody()->write($csv);
+
+        return $response;
+    }
+
+    public function deleteInterestAction(int $interestUid): ResponseInterface
+    {
+        if ($interestUid > 0) {
+            $connection = GeneralUtility::makeInstance(ConnectionPool::class)
+                ->getConnectionForTable('tx_pipliobackend_interest');
+
+            $affectedRows = $connection->update(
+                'tx_pipliobackend_interest',
+                [
+                    'deleted' => 1,
+                    'tstamp' => time(),
+                ],
+                [
+                    'uid' => $interestUid,
+                    'deleted' => 0,
+                ],
+                [
+                    'deleted' => Connection::PARAM_INT,
+                    'tstamp' => Connection::PARAM_INT,
+                    'uid' => Connection::PARAM_INT,
+                ]
+            );
+
+            if ($affectedRows > 0) {
+                $this->addFlashMessage('Interessenten-Eintrag wurde geloescht.');
+            } else {
+                $this->addFlashMessage('Interessenten-Eintrag wurde nicht gefunden oder war bereits geloescht.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING);
+            }
+        }
+
+        return $this->redirect('index');
     }
 
     private function buildStats(): array
@@ -106,6 +190,113 @@ final class WordModuleController extends ActionController
         }
 
         return $items;
+    }
+
+    private function buildInterestStats(): array
+    {
+        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable('tx_pipliobackend_interest');
+
+        $total = (int)$connection->count('*', 'tx_pipliobackend_interest', ['deleted' => 0]);
+        $visible = (int)$connection->count('*', 'tx_pipliobackend_interest', ['hidden' => 0, 'deleted' => 0]);
+        $last24Hours = $this->countInterestSince(time() - 86400);
+        $last7Days = $this->countInterestSince(time() - 604800);
+
+        return [
+            'total' => $total,
+            'visible' => $visible,
+            'last24Hours' => $last24Hours,
+            'last7Days' => $last7Days,
+        ];
+    }
+
+    private function countInterestSince(int $timestamp): int
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_pipliobackend_interest');
+
+        return (int)$queryBuilder
+            ->count('*')
+            ->from('tx_pipliobackend_interest')
+            ->where(
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)),
+                $queryBuilder->expr()->gte('crdate', $queryBuilder->createNamedParameter($timestamp, \TYPO3\CMS\Core\Database\Connection::PARAM_INT))
+            )
+            ->executeQuery()
+            ->fetchOne();
+    }
+
+    private function findRecentInterests(): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_pipliobackend_interest');
+
+        $rows = $queryBuilder
+            ->select('uid', 'name', 'email', 'page_title', 'page_url', 'source_page_id', 'crdate', 'hidden', 'consent_timestamp', 'privacy_version')
+            ->from('tx_pipliobackend_interest')
+            ->where(
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, \TYPO3\CMS\Core\Database\Connection::PARAM_INT))
+            )
+            ->orderBy('crdate', 'DESC')
+            ->setMaxResults(10)
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        return array_map(static fn(array $row): array => [
+            'uid' => (int)($row['uid'] ?? 0),
+            'name' => (string)($row['name'] ?? ''),
+            'email' => (string)($row['email'] ?? ''),
+            'pageTitle' => (string)($row['page_title'] ?? ''),
+            'pageUrl' => (string)($row['page_url'] ?? ''),
+            'sourcePageId' => (int)($row['source_page_id'] ?? 0),
+            'createdAt' => (int)($row['crdate'] ?? 0),
+            'consentTimestamp' => (int)($row['consent_timestamp'] ?? 0),
+            'privacyVersion' => (string)($row['privacy_version'] ?? ''),
+            'isHidden' => (bool)($row['hidden'] ?? false),
+        ], $rows);
+    }
+
+    private function findInterestsForExport(): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_pipliobackend_interest');
+
+        return $queryBuilder
+            ->select('uid', 'name', 'email', 'page_title', 'page_url', 'source_page_id', 'crdate', 'hidden', 'consent_timestamp', 'privacy_version')
+            ->from('tx_pipliobackend_interest')
+            ->where(
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT))
+            )
+            ->orderBy('crdate', 'DESC')
+            ->executeQuery()
+            ->fetchAllAssociative();
+    }
+
+    private function findTopInterestPages(): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_pipliobackend_interest');
+
+        $rows = $queryBuilder
+            ->select('page_title', 'page_url', 'source_page_id')
+            ->addSelectLiteral('COUNT(*) AS lead_count')
+            ->from('tx_pipliobackend_interest')
+            ->where(
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, \TYPO3\CMS\Core\Database\Connection::PARAM_INT))
+            )
+            ->groupBy('page_title', 'page_url', 'source_page_id')
+            ->orderBy('lead_count', 'DESC')
+            ->addOrderBy('page_title', 'ASC')
+            ->setMaxResults(5)
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        return array_map(static fn(array $row): array => [
+            'pageTitle' => (string)($row['page_title'] ?? ''),
+            'pageUrl' => (string)($row['page_url'] ?? ''),
+            'sourcePageId' => (int)($row['source_page_id'] ?? 0),
+            'leadCount' => (int)($row['lead_count'] ?? 0),
+        ], $rows);
     }
 
     private function findWords(array $filters): array
@@ -233,5 +424,15 @@ final class WordModuleController extends ActionController
         }
 
         return implode(', ', array_slice($items, 0, 3)) . ' ...';
+    }
+
+    private function getModuleTemplateFactory(): ModuleTemplateFactory
+    {
+        return GeneralUtility::makeInstance(ModuleTemplateFactory::class);
+    }
+
+    private function getResponseFactory(): ResponseFactory
+    {
+        return GeneralUtility::makeInstance(ResponseFactory::class);
     }
 }

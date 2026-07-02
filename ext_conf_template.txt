@@ -4,3 +4,9 @@
 
 # cat=api//a; type=string; label=API Key for Piplio app
 apiKey =
+
+# cat=interest//a; type=int; label=Storage PID for interest leads (0 = use page of frontend plugin)
+interestStoragePid = 0
+
+# cat=interest//a; type=string; label=Privacy consent version stored with leads
+privacyVersion = v1
