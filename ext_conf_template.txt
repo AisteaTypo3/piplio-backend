@@ -2,11 +2,11 @@
 # Extension Configuration template
 #
 
-# cat=api//a; type=string; label=API Key for Piplio app
+# cat=api//a; type=string; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.apiKey
 apiKey =
 
-# cat=interest//a; type=int; label=Storage PID for interest leads (0 = use page of frontend plugin)
+# cat=interest//a; type=int; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.interestStoragePid
 interestStoragePid = 0
 
-# cat=interest//a; type=string; label=Privacy consent version stored with leads
+# cat=interest//a; type=string; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.privacyVersion
 privacyVersion = v1

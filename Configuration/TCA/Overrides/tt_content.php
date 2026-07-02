@@ -9,6 +9,6 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 ExtensionUtility::registerPlugin(
     'PiplioBackend',
     'InterestWidget',
-    'Piplio Interesse Widget',
+    'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:plugin.interestWidget.title',
     'piplio-backend-record'
 );

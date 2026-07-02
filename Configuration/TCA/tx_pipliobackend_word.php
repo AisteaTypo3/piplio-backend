@@ -1,7 +1,7 @@
 <?php
 return [
     'ctrl' => [
-        'title'            => 'Piplio Wort',
+        'title'            => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.title',
         'label'            => 'word',
         'label_alt'        => 'topic,difficulty',
         'label_alt_force'  => true,
@@ -19,36 +19,36 @@ return [
 
     'columns' => [
         'hidden' => [
-            'label'  => 'Versteckt',
+            'label'  => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.hidden',
             'config' => ['type' => 'check', 'renderType' => 'checkboxToggle'],
         ],
 
         'topic' => [
-            'label'  => 'Thema',
+            'label'  => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.topic',
             'config' => [
                 'type'       => 'select',
                 'renderType' => 'selectSingle',
                 'items'      => [
-                    ['label' => '-- Thema wählen --', 'value' => ''],
-                    ['label' => 'Artikel (der/die/das)',     'value' => 'deutsch_artikel'],
-                    ['label' => 'Reime',                     'value' => 'deutsch_reime'],
-                    ['label' => 'Groß- & Kleinschreibung',  'value' => 'deutsch_gross_klein'],
-                    ['label' => 'Wortarten',                 'value' => 'deutsch_wortarten'],
-                    ['label' => 'Plural (Mehrzahl)',         'value' => 'deutsch_plural'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.topicPlaceholder', 'value' => ''],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:topic.deutsch_artikel', 'value' => 'deutsch_artikel'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:topic.deutsch_reime', 'value' => 'deutsch_reime'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:topic.deutsch_gross_klein', 'value' => 'deutsch_gross_klein'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:topic.deutsch_wortarten', 'value' => 'deutsch_wortarten'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:topic.deutsch_plural', 'value' => 'deutsch_plural'],
                 ],
                 'required' => true,
             ],
         ],
 
         'difficulty' => [
-            'label'  => 'Schwierigkeitsgrad',
+            'label'  => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.difficulty',
             'config' => [
                 'type'       => 'select',
                 'renderType' => 'selectSingle',
                 'items'      => [
-                    ['label' => 'Leicht',   'value' => 'easy'],
-                    ['label' => 'Mittel',   'value' => 'medium'],
-                    ['label' => 'Schwer',   'value' => 'hard'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:difficulty.easy', 'value' => 'easy'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:difficulty.medium', 'value' => 'medium'],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:difficulty.hard', 'value' => 'hard'],
                 ],
                 'default'  => 'easy',
                 'required' => true,
@@ -56,7 +56,7 @@ return [
         ],
 
         'word' => [
-            'label'  => 'Wort',
+            'label'  => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.word',
             'config' => [
                 'type'     => 'input',
                 'size'     => 30,
@@ -67,13 +67,13 @@ return [
 
         // ── ARTIKEL ───────────────────────────────────────────────────────────
         'artikel' => [
-            'label'       => 'Artikel',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.artikel',
             'displayCond' => 'FIELD:topic:=:deutsch_artikel',
             'config'      => [
                 'type'       => 'select',
                 'renderType' => 'selectSingle',
                 'items'      => [
-                    ['label' => '-- wählen --', 'value' => ''],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.artikelPlaceholder', 'value' => ''],
                     ['label' => 'der', 'value' => 'der'],
                     ['label' => 'die', 'value' => 'die'],
                     ['label' => 'das', 'value' => 'das'],
@@ -83,13 +83,13 @@ return [
 
         // ── WORTARTEN ─────────────────────────────────────────────────────────
         'word_type' => [
-            'label'       => 'Wortart',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.wordType',
             'displayCond' => 'FIELD:topic:=:deutsch_wortarten',
             'config'      => [
                 'type'       => 'select',
                 'renderType' => 'selectSingle',
                 'items'      => [
-                    ['label' => '-- wählen --',  'value' => ''],
+                    ['label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.artikelPlaceholder',  'value' => ''],
                     ['label' => 'Nomen',    'value' => 'Nomen'],
                     ['label' => 'Verb',     'value' => 'Verb'],
                     ['label' => 'Adjektiv', 'value' => 'Adjektiv'],
@@ -99,7 +99,7 @@ return [
 
         // ── GROSS / KLEIN ─────────────────────────────────────────────────────
         'is_nomen' => [
-            'label'       => 'Ist ein Nomen (groß schreiben)',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.isNomen',
             'displayCond' => 'FIELD:topic:=:deutsch_gross_klein',
             'config'      => [
                 'type'       => 'check',
@@ -110,7 +110,7 @@ return [
 
         // ── PLURAL ────────────────────────────────────────────────────────────
         'plural_form' => [
-            'label'       => 'Mehrzahl (Plural)',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.pluralForm',
             'displayCond' => 'FIELD:topic:=:deutsch_plural',
             'config'      => [
                 'type' => 'input',
@@ -121,7 +121,7 @@ return [
 
         // ── REIME ─────────────────────────────────────────────────────────────
         'rhyme_words' => [
-            'label'       => 'Reimwörter (kommagetrennt, z.B. Haus,raus,Maus)',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.rhymeWords',
             'displayCond' => 'FIELD:topic:=:deutsch_reime',
             'config'      => [
                 'type' => 'input',
@@ -130,7 +130,7 @@ return [
             ],
         ],
         'no_rhyme_words' => [
-            'label'       => 'Nicht-Reimwörter (kommagetrennt, z.B. Ball,Hund,Baum)',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.noRhymeWords',
             'displayCond' => 'FIELD:topic:=:deutsch_reime',
             'config'      => [
                 'type' => 'input',
@@ -141,7 +141,7 @@ return [
 
         // ── FALSCHE ANTWORTEN (Artikel + Plural) ──────────────────────────────
         'wrong_options' => [
-            'label'       => 'Falsche Antworten (kommagetrennt)',
+            'label'       => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.word.wrongOptions',
             'displayCond' => 'FIELD:topic:IN:deutsch_plural,deutsch_artikel',
             'config'      => [
                 'type' => 'input',
@@ -154,8 +154,8 @@ return [
     'types' => [
         '0' => [
             'showitem' => '
-                --div--;Allgemein, hidden, topic, difficulty, word,
-                --div--;Thema-Details, artikel, word_type, is_nomen, plural_form, rhyme_words, no_rhyme_words, wrong_options
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.general, hidden, topic, difficulty, word,
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.topicDetails, artikel, word_type, is_nomen, plural_form, rhyme_words, no_rhyme_words, wrong_options
             ',
         ],
     ],

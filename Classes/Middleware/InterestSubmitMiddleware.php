@@ -10,6 +10,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 final class InterestSubmitMiddleware implements MiddlewareInterface
 {
@@ -34,7 +35,7 @@ final class InterestSubmitMiddleware implements MiddlewareInterface
         if ($method !== 'POST') {
             return $this->withCorsHeaders(new JsonResponse([
                 'ok' => false,
-                'message' => 'Method not allowed.',
+                'message' => (string)(LocalizationUtility::translate('message.methodNotAllowed', 'PiplioBackend') ?? 'Method not allowed.'),
             ], 405));
         }
 

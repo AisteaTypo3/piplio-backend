@@ -7,6 +7,11 @@
         const toggleId = widget.id ? `${widget.id}-toggle` : '';
         const toggle = toggleId ? document.getElementById(toggleId) : null;
         const endpoint = form ? (form.dataset.endpoint || form.action) : '';
+        const labelSubmitting = form ? (form.dataset.labelSubmitting || 'Saving ...') : 'Saving ...';
+        const labelSubmit = form ? (form.dataset.labelSubmit || 'Submit') : 'Submit';
+        const messageInvalid = form ? (form.dataset.messageInvalid || 'The AJAX response was invalid. Please clear caches and test again.') : 'The AJAX response was invalid. Please clear caches and test again.';
+        const messageError = form ? (form.dataset.messageError || 'The request could not be stored.') : 'The request could not be stored.';
+        const messageSuccess = form ? (form.dataset.messageSuccess || 'Thanks, your email has been saved.') : 'Thanks, your email has been saved.';
 
         if (!form || !feedback || !submitButton || form.dataset.ajax !== 'true' || !endpoint) {
             return;
@@ -25,7 +30,7 @@
             event.preventDefault();
             setFeedback('', '');
             submitButton.disabled = true;
-            submitButton.textContent = 'Speichert ...';
+            submitButton.textContent = labelSubmitting;
 
             try {
                 const formData = new FormData(form);
@@ -49,27 +54,27 @@
 
                 const contentType = response.headers.get('content-type') || '';
                 if (!contentType.includes('application/json')) {
-                    throw new Error('Die AJAX-Antwort war ungueltig. Bitte Cache leeren und erneut testen.');
+                    throw new Error(messageInvalid);
                 }
 
                 const result = await response.json();
                 if (!response.ok || !result.ok) {
-                    throw new Error(result.message || 'Die Anfrage konnte nicht gespeichert werden.');
+                    throw new Error(result.message || messageError);
                 }
 
-                setFeedback(result.message || 'Danke, Ihre E-Mail wurde eingetragen.', 'success');
+                setFeedback(result.message || messageSuccess, 'success');
                 form.reset();
                 if (toggle) {
                     toggle.checked = true;
                 }
             } catch (error) {
-                setFeedback(error instanceof Error ? error.message : 'Die Anfrage konnte nicht gespeichert werden.', 'error');
+                setFeedback(error instanceof Error ? error.message : messageError, 'error');
                 if (toggle) {
                     toggle.checked = true;
                 }
             } finally {
                 submitButton.disabled = false;
-                submitButton.textContent = 'Eintragen';
+                submitButton.textContent = labelSubmit;
             }
         });
     };

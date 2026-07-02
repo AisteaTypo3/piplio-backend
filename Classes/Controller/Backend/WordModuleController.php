@@ -12,21 +12,22 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 final class WordModuleController extends ActionController
 {
     private const TOPIC_LABELS = [
-        'deutsch_artikel' => 'Artikel',
-        'deutsch_reime' => 'Reime',
-        'deutsch_gross_klein' => 'Gross/Klein',
-        'deutsch_wortarten' => 'Wortarten',
-        'deutsch_plural' => 'Plural',
+        'deutsch_artikel' => 'topic.deutsch_artikel',
+        'deutsch_reime' => 'topic.deutsch_reime',
+        'deutsch_gross_klein' => 'topic.deutsch_gross_klein',
+        'deutsch_wortarten' => 'topic.deutsch_wortarten',
+        'deutsch_plural' => 'topic.deutsch_plural',
     ];
 
     private const DIFFICULTY_LABELS = [
-        'easy' => 'Leicht',
-        'medium' => 'Mittel',
-        'hard' => 'Schwer',
+        'easy' => 'difficulty.easy',
+        'medium' => 'difficulty.medium',
+        'hard' => 'difficulty.hard',
     ];
 
     public function indexAction(string $topic = '', string $difficulty = '', string $q = ''): ResponseInterface
@@ -38,12 +39,12 @@ final class WordModuleController extends ActionController
         ];
 
         $moduleTemplate = $this->getModuleTemplateFactory()->create($this->request);
-        $moduleTemplate->setTitle('Piplio Daten');
+        $moduleTemplate->setTitle($this->translate('module.title'));
 
         $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
         $shortcutButton = $buttonBar->makeShortcutButton()
             ->setRouteIdentifier('piplio_backend')
-            ->setDisplayName('Piplio Daten');
+            ->setDisplayName($this->translate('module.title'));
         $buttonBar->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
 
         $moduleTemplate->assignMultiple([
@@ -51,8 +52,8 @@ final class WordModuleController extends ActionController
             'stats' => $this->buildStats(),
             'interestStats' => $this->buildInterestStats(),
             'topInterestPages' => $this->findTopInterestPages(),
-            'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], 'Alle Themen'),
-            'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], 'Alle Level'),
+            'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], $this->translate('backend.filter.allTopics')),
+            'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], $this->translate('backend.filter.allLevels')),
             'rows' => $this->findWords($filters),
             'recentInterests' => $this->findRecentInterests(),
             'apiExamples' => $this->buildApiExamples(),
@@ -135,9 +136,9 @@ final class WordModuleController extends ActionController
             );
 
             if ($affectedRows > 0) {
-                $this->addFlashMessage('Interessenten-Eintrag wurde geloescht.');
+                $this->addFlashMessage($this->translate('backend.deletedSuccess'));
             } else {
-                $this->addFlashMessage('Interessenten-Eintrag wurde nicht gefunden oder war bereits geloescht.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING);
+                $this->addFlashMessage($this->translate('backend.deletedMissing'), '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING);
             }
         }
 
@@ -184,7 +185,7 @@ final class WordModuleController extends ActionController
             $value = (string)($row[$field] ?? '');
             $items[] = [
                 'value' => $value,
-                'label' => $labels[$value] ?? $value,
+                'label' => $this->translate($labels[$value] ?? $value),
                 'count' => (int)($row['record_count'] ?? 0),
             ];
         }
@@ -360,12 +361,12 @@ final class WordModuleController extends ActionController
     private function formatRow(array $row): array
     {
         $details = match ((string)$row['topic']) {
-            'deutsch_artikel' => 'Artikel: ' . ($row['artikel'] ?: '-'),
-            'deutsch_reime' => 'Reime: ' . $this->limitList((string)$row['rhyme_words']) . ' | Keine Reime: ' . $this->limitList((string)$row['no_rhyme_words']),
-            'deutsch_gross_klein' => (bool)$row['is_nomen'] ? 'Nomen, soll gross geschrieben werden' : 'Kein Nomen, soll klein geschrieben werden',
-            'deutsch_wortarten' => 'Wortart: ' . ($row['word_type'] ?: '-'),
-            'deutsch_plural' => 'Plural: ' . ($row['plural_form'] ?: '-') . ' | Falsch: ' . $this->limitList((string)$row['wrong_options']),
-            default => '-',
+            'deutsch_artikel' => sprintf($this->translate('details.artikel'), $row['artikel'] ?: $this->translate('details.default')),
+            'deutsch_reime' => sprintf($this->translate('details.reime'), $this->limitList((string)$row['rhyme_words']), $this->limitList((string)$row['no_rhyme_words'])),
+            'deutsch_gross_klein' => (bool)$row['is_nomen'] ? $this->translate('details.grossKlein.nomen') : $this->translate('details.grossKlein.other'),
+            'deutsch_wortarten' => sprintf($this->translate('details.wortart'), $row['word_type'] ?: $this->translate('details.default')),
+            'deutsch_plural' => sprintf($this->translate('details.plural'), $row['plural_form'] ?: $this->translate('details.default'), $this->limitList((string)$row['wrong_options'])),
+            default => $this->translate('details.default'),
         };
 
         return [
@@ -373,11 +374,11 @@ final class WordModuleController extends ActionController
             'pid' => (int)$row['pid'],
             'word' => (string)$row['word'],
             'topic' => (string)$row['topic'],
-            'topicLabel' => self::TOPIC_LABELS[(string)$row['topic']] ?? (string)$row['topic'],
+            'topicLabel' => $this->translate(self::TOPIC_LABELS[(string)$row['topic']] ?? (string)$row['topic']),
             'difficulty' => (string)$row['difficulty'],
-            'difficultyLabel' => self::DIFFICULTY_LABELS[(string)$row['difficulty']] ?? (string)$row['difficulty'],
+            'difficultyLabel' => $this->translate(self::DIFFICULTY_LABELS[(string)$row['difficulty']] ?? (string)$row['difficulty']),
             'isHidden' => (bool)$row['hidden'],
-            'statusLabel' => (bool)$row['hidden'] ? 'Versteckt' : 'Sichtbar',
+            'statusLabel' => (bool)$row['hidden'] ? $this->translate('status.hidden') : $this->translate('status.visible'),
             'details' => $details,
             'updatedAt' => (int)$row['tstamp'],
         ];
@@ -416,7 +417,7 @@ final class WordModuleController extends ActionController
     {
         $items = array_values(array_filter(array_map('trim', explode(',', $value))));
         if ($items === []) {
-            return '-';
+            return $this->translate('details.default');
         }
 
         if (count($items) <= 3) {
@@ -434,5 +435,10 @@ final class WordModuleController extends ActionController
     private function getResponseFactory(): ResponseFactory
     {
         return GeneralUtility::makeInstance(ResponseFactory::class);
+    }
+
+    private function translate(string $key): string
+    {
+        return (string)(LocalizationUtility::translate($key, 'PiplioBackend') ?? $key);
     }
 }

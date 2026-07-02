@@ -2,7 +2,7 @@
 
 return [
     'ctrl' => [
-        'title' => 'Piplio Interesse',
+        'title' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.title',
         'label' => 'email',
         'label_alt' => 'name,page_title',
         'label_alt_force' => true,
@@ -19,14 +19,14 @@ return [
     ],
     'columns' => [
         'hidden' => [
-            'label' => 'Versteckt',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.hidden',
             'config' => [
                 'type' => 'check',
                 'renderType' => 'checkboxToggle',
             ],
         ],
         'name' => [
-            'label' => 'Name',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.name',
             'config' => [
                 'type' => 'input',
                 'size' => 40,
@@ -35,7 +35,7 @@ return [
             ],
         ],
         'email' => [
-            'label' => 'E-Mail',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.email',
             'config' => [
                 'type' => 'input',
                 'size' => 40,
@@ -44,7 +44,7 @@ return [
             ],
         ],
         'page_title' => [
-            'label' => 'Seitentitel',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.pageTitle',
             'config' => [
                 'type' => 'input',
                 'size' => 50,
@@ -52,7 +52,7 @@ return [
             ],
         ],
         'page_url' => [
-            'label' => 'Seiten-URL',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.pageUrl',
             'config' => [
                 'type' => 'input',
                 'size' => 50,
@@ -60,7 +60,7 @@ return [
             ],
         ],
         'source_page_id' => [
-            'label' => 'Quellseiten-PID',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.sourcePageId',
             'config' => [
                 'type' => 'number',
                 'format' => 'integer',
@@ -68,7 +68,7 @@ return [
             ],
         ],
         'remote_address' => [
-            'label' => 'IP-Adresse',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.remoteAddress',
             'config' => [
                 'type' => 'input',
                 'readOnly' => true,
@@ -76,7 +76,7 @@ return [
             ],
         ],
         'user_agent' => [
-            'label' => 'User Agent',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.userAgent',
             'config' => [
                 'type' => 'text',
                 'readOnly' => true,
@@ -85,7 +85,7 @@ return [
             ],
         ],
         'consent_timestamp' => [
-            'label' => 'Consent-Zeitpunkt',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.consentTimestamp',
             'config' => [
                 'type' => 'datetime',
                 'format' => 'datetime',
@@ -94,7 +94,7 @@ return [
             ],
         ],
         'privacy_version' => [
-            'label' => 'Datenschutz-Version',
+            'label' => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.interest.privacyVersion',
             'config' => [
                 'type' => 'input',
                 'readOnly' => true,
@@ -106,10 +106,10 @@ return [
         '0' => [
             'showitem' => '
                 hidden,
-                --div--;Kontakt, name, email,
-                --div--;Quelle, page_title, page_url, source_page_id,
-                --div--;Datenschutz, consent_timestamp, privacy_version,
-                --div--;Technik, remote_address, user_agent
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.contact, name, email,
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.source, page_title, page_url, source_page_id,
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.privacy, consent_timestamp, privacy_version,
+                --div--;LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.tab.technical, remote_address, user_agent
             ',
         ],
     ],

@@ -1,6 +1,16 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
+<f:variable name="labelClose" value="{f:translate(key: 'frontend.close', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelSubmit" value="{f:translate(key: 'frontend.submit', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelSubmitting" value="{f:translate(key: 'frontend.submitting', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelLater" value="{f:translate(key: 'frontend.later', extensionName: 'PiplioBackend')}" />
+<f:variable name="messageInvalid" value="{f:translate(key: 'frontend.ajaxInvalid', extensionName: 'PiplioBackend')}" />
+<f:variable name="messageError" value="{f:translate(key: 'frontend.ajaxError', extensionName: 'PiplioBackend')}" />
+<f:variable name="messageSuccess" value="{f:translate(key: 'frontend.ajaxSuccess', extensionName: 'PiplioBackend')}" />
+<f:variable name="placeholderName" value="{f:translate(key: 'frontend.field.namePlaceholder', extensionName: 'PiplioBackend')}" />
+<f:variable name="placeholderEmail" value="{f:translate(key: 'frontend.field.emailPlaceholder', extensionName: 'PiplioBackend')}" />
+
 <div class="piplio-interest-plugin">
     <f:if condition="{openPanel}">
         <f:then>
@@ -23,24 +33,24 @@
             <div class="piplio-interest-panel-inner">
                 <div class="piplio-interest-panel-top">
                     <div>
-                        <div class="piplio-interest-heading">Pip sagt Hallo.</div>
-                        <p class="piplio-interest-text">Wenn Sie Interesse haben, tragen Sie sich kurz ein.</p>
+                        <div class="piplio-interest-heading"><f:translate key="frontend.heading" extensionName="PiplioBackend" /></div>
+                        <p class="piplio-interest-text"><f:translate key="frontend.text" extensionName="PiplioBackend" /></p>
                     </div>
-                    <label for="{widgetId}-toggle" class="piplio-interest-close" aria-label="Schliessen">×</label>
+                    <label for="{widgetId}-toggle" class="piplio-interest-close" aria-label="{labelClose}">×</label>
                 </div>
-                <div class="piplio-interest-note">Kein Newsletter-Flow. Nur Interesse vormerken.</div>
+                <div class="piplio-interest-note"><f:translate key="frontend.note" extensionName="PiplioBackend" /></div>
                 <div class="piplio-interest-messages">
                     <f:flashMessages />
                 </div>
                 <p class="piplio-interest-feedback" hidden aria-live="polite"></p>
-                <f:form action="submit" method="post" class="piplio-interest-form" additionalAttributes="{data-ajax: 'true', data-endpoint: '/api/piplio/v1/interest'}">
+                <f:form action="submit" method="post" class="piplio-interest-form" additionalAttributes="{data-ajax: 'true', data-endpoint: '/api/piplio/v1/interest', data-label-submitting: labelSubmitting, data-label-submit: labelSubmit, data-message-invalid: messageInvalid, data-message-error: messageError, data-message-success: messageSuccess}">
                     <label class="piplio-interest-field">
-                        <span>Name</span>
-                        <f:form.textfield name="name" required="required" additionalAttributes="{maxlength: 120, autocomplete: 'name', placeholder: 'Max Mustermann'}" />
+                        <span><f:translate key="frontend.field.name" extensionName="PiplioBackend" /></span>
+                        <f:form.textfield name="name" required="required" additionalAttributes="{maxlength: 120, autocomplete: 'name', placeholder: placeholderName}" />
                     </label>
                     <label class="piplio-interest-field">
-                        <span>E-Mail</span>
-                        <f:form.textfield type="email" name="email" required="required" additionalAttributes="{maxlength: 255, autocomplete: 'email', placeholder: 'max@beispiel.de'}" />
+                        <span><f:translate key="frontend.field.email" extensionName="PiplioBackend" /></span>
+                        <f:form.textfield type="email" name="email" required="required" additionalAttributes="{maxlength: 255, autocomplete: 'email', placeholder: placeholderEmail}" />
                     </label>
                     <f:form.hidden name="pageId" value="{pageId}" />
                     <f:form.hidden name="pageTitle" value="{pageTitle}" />
@@ -49,17 +59,17 @@
                     <f:form.hidden name="privacyVersion" value="{privacyVersion}" />
                     <div class="piplio-interest-honeypot" aria-hidden="true">
                         <label>
-                            <span>Website</span>
+                            <span><f:translate key="frontend.field.website" extensionName="PiplioBackend" /></span>
                             <f:form.textfield name="website" value="" additionalAttributes="{tabindex: '-1', autocomplete: 'off'}" />
                         </label>
                     </div>
                     <label class="piplio-interest-consent">
                         <f:form.checkbox name="privacyAccepted" value="1" />
-                        <span>Ich stimme zu, dass meine Angaben zur Kontaktaufnahme in TYPO3 gespeichert werden.</span>
+                        <span><f:translate key="frontend.privacy" extensionName="PiplioBackend" /></span>
                     </label>
                     <div class="piplio-interest-actions">
-                        <button type="submit" class="piplio-interest-submit">Eintragen</button>
-                        <label for="{widgetId}-toggle" class="piplio-interest-secondary">Spaeter</label>
+                        <button type="submit" class="piplio-interest-submit">{labelSubmit}</button>
+                        <label for="{widgetId}-toggle" class="piplio-interest-secondary">{labelLater}</label>
                     </div>
                 </f:form>
             </div>
@@ -68,44 +78,65 @@
 </div>
 
 <style>
-    .piplio-interest-plugin{font-family:"Avenir Next","Helvetica Neue",Helvetica,sans-serif}
+    .piplio-interest-plugin{
+        --piplio-primary:#0071e3;
+        --piplio-primary-hover:#0077ed;
+        --piplio-primary-gradient:linear-gradient(135deg,#0077ed,#0071e3);
+        --piplio-text:#1d1d1f;
+        --piplio-text-muted:#86868b;
+        --piplio-surface:#ffffff;
+        --piplio-surface-soft:#f5f5f7;
+        --piplio-border:#d2d2d7;
+        --piplio-focus:rgba(0,113,227,.15);
+        --piplio-shadow:0 8px 30px rgba(0,0,0,.12);
+        --piplio-shadow-strong:0 10px 20px rgba(0,113,227,.3);
+        font-family:"Avenir Next","Helvetica Neue",Helvetica,sans-serif
+    }
     .piplio-interest-state{position:absolute;left:-9999px;opacity:0}
     .piplio-interest-widget{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:9998}
     .piplio-interest-backdrop{display:none}
-    .piplio-interest-toggle{position:relative;display:inline-flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;background:linear-gradient(160deg,#ffffff 0%,#edf5ff 100%);box-shadow:0 20px 44px rgba(39,66,110,.22);cursor:pointer;border:1px solid rgba(74,110,168,.14)}
+    .piplio-interest-toggle{position:relative;display:inline-flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;background:linear-gradient(180deg,#ffffff 0%,#f5f5f7 100%);box-shadow:0 8px 30px rgba(0,0,0,.12);cursor:pointer;border:1px solid rgba(210,210,215,.9)}
     .piplio-interest-avatar{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px}
     .piplio-interest-avatar img{width:56px;height:auto;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,.14))}
-    .piplio-interest-dot{position:absolute;right:10px;top:10px;width:12px;height:12px;border-radius:50%;background:#5df0a5;box-shadow:0 0 0 0 rgba(93,240,165,.55);animation:piplioPulse 1.8s infinite}
+    .piplio-interest-dot{position:absolute;right:10px;top:10px;width:12px;height:12px;border-radius:50%;background:var(--piplio-primary);box-shadow:0 0 0 0 rgba(0,113,227,.35);animation:piplioPulse 1.8s infinite}
     .piplio-interest-panel{position:absolute;right:100%;top:50%;width:min(340px,calc(100vw - 36px));transform:translate(-14px,-50%) scale(.96);opacity:0;pointer-events:none;transform-origin:right center;transition:opacity .18s ease,transform .18s ease}
-    .piplio-interest-panel-inner{background:linear-gradient(180deg,#ffffff 0%,#f9fbff 100%);border-radius:24px;padding:20px;box-shadow:0 24px 54px rgba(16,31,61,.22);border:1px solid rgba(42,74,119,.10)}
+    .piplio-interest-panel-inner{background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);border-radius:24px;padding:20px;box-shadow:var(--piplio-shadow);border:1px solid rgba(210,210,215,.95)}
     .piplio-interest-panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-    .piplio-interest-heading{font-size:24px;line-height:1;color:#14203d;margin:0 0 8px;font-weight:800;letter-spacing:-.04em}
-    .piplio-interest-text{margin:0;color:#53627d;font-size:13px;line-height:1.45}
-    .piplio-interest-note{margin:14px 0 16px;padding:9px 11px;border-radius:12px;background:#eff6ff;color:#36537c;font-size:12px;font-weight:600}
+    .piplio-interest-heading{font-size:24px;line-height:1;color:var(--piplio-text);margin:0 0 8px;font-weight:800;letter-spacing:-.04em}
+    .piplio-interest-text{margin:0;color:var(--piplio-text-muted);font-size:13px;line-height:1.45}
+    .piplio-interest-note{margin:14px 0 16px;padding:9px 11px;border-radius:12px;background:rgba(0,113,227,.06);color:var(--piplio-primary);font-size:12px;font-weight:600}
     .piplio-interest-messages .typo3-messages{margin-bottom:12px}
     .piplio-interest-feedback{margin:0 0 12px;padding:10px 12px;border-radius:12px;font-size:12px;font-weight:700}
     .piplio-interest-feedback.is-success{background:#e9fbf1;color:#1f6b47}
     .piplio-interest-feedback.is-error{background:#fff0f0;color:#9b2c2c}
     .piplio-interest-form{display:flex;flex-direction:column;gap:12px}
-    .piplio-interest-field{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:#203250;text-transform:uppercase}
-    .piplio-interest-field input{border:1px solid #d4e0ee;border-radius:14px;padding:13px 14px;font:inherit;font-size:14px;text-transform:none;background:#fff;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
-    .piplio-interest-field input::placeholder{color:#8aa0bc}
-    .piplio-interest-field input:focus{outline:none;border-color:#5d8fff;box-shadow:0 0 0 4px rgba(93,143,255,.18);transform:translateY(-1px)}
-    .piplio-interest-consent{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:flex-start;font-size:12px;line-height:1.4;color:#4a5d79}
+    .piplio-interest-field{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--piplio-text);text-transform:uppercase}
+    .piplio-interest-field input{border:1px solid transparent;border-radius:14px;padding:13px 14px;font:inherit;font-size:14px;text-transform:none;background:var(--piplio-surface-soft);color:var(--piplio-text);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background-color .18s ease}
+    .piplio-interest-field input::placeholder{color:rgba(134,134,139,.82)}
+    .piplio-interest-field input:hover:not(:focus){background:#fbfbfc}
+    .piplio-interest-field input:focus{outline:none;border-color:var(--piplio-primary);box-shadow:0 0 0 4px var(--piplio-focus);background:#fbfbfc;transform:translateY(-1px)}
+    .piplio-interest-consent{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:flex-start;font-size:12px;line-height:1.4;color:var(--piplio-text-muted)}
     .piplio-interest-consent input{margin-top:2px}
     .piplio-interest-honeypot{position:absolute;left:-9999px;opacity:0;pointer-events:none}
     .piplio-interest-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:2px}
     .piplio-interest-submit,.piplio-interest-secondary,.piplio-interest-close{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-    .piplio-interest-submit{border:0;border-radius:999px;padding:12px 16px;background:linear-gradient(135deg,#ffcb57 0%,#ff9e4f 100%);color:#17233c;font:inherit;font-weight:800;letter-spacing:-.01em;box-shadow:0 10px 22px rgba(255,166,76,.28)}
-    .piplio-interest-secondary{padding:10px 13px;border-radius:999px;background:#edf2f8;color:#2e4768;font-size:13px;font-weight:700}
-    .piplio-interest-close{width:36px;height:36px;border-radius:50%;background:#eef4fb;color:#355179;font-size:24px;line-height:1;font-weight:400;flex:0 0 36px}
+    .piplio-interest-submit{border:0;border-radius:30px;padding:12px 16px;background:var(--piplio-primary-gradient);background-size:200% 200%;color:#fff;font:inherit;font-weight:700;letter-spacing:-.01em;box-shadow:0 6px 12px rgba(0,113,227,.2);position:relative;overflow:hidden;animation:gradientFlow 8s ease infinite;transition:transform .3s ease,box-shadow .3s ease}
+    .piplio-interest-submit:hover,.piplio-interest-submit:focus{transform:translateY(-3px);box-shadow:var(--piplio-shadow-strong)}
+    .piplio-interest-submit:active{transform:translateY(1px);box-shadow:0 4px 8px rgba(0,113,227,.2)}
+    .piplio-interest-secondary{padding:10px 13px;border-radius:999px;background:var(--piplio-surface-soft);color:var(--piplio-primary);font-size:13px;font-weight:700}
+    .piplio-interest-close{width:36px;height:36px;border-radius:50%;background:var(--piplio-surface-soft);color:var(--piplio-primary);font-size:24px;line-height:1;font-weight:400;flex:0 0 36px}
     .typo3-messages .alert{margin:0 0 12px;border-radius:14px}
     .piplio-interest-state:checked + .piplio-interest-widget .piplio-interest-panel{opacity:1;pointer-events:auto;transform:translate(-14px,-50%) scale(1)}
-    .piplio-interest-state:checked + .piplio-interest-widget .piplio-interest-toggle{box-shadow:0 24px 54px rgba(39,66,110,.28)}
+    .piplio-interest-state:checked + .piplio-interest-widget .piplio-interest-toggle{box-shadow:0 10px 20px rgba(0,113,227,.18);border-color:rgba(0,113,227,.18)}
     @keyframes piplioPulse{
-        0%{box-shadow:0 0 0 0 rgba(132,247,189,.65)}
-        70%{box-shadow:0 0 0 12px rgba(132,247,189,0)}
-        100%{box-shadow:0 0 0 0 rgba(132,247,189,0)}
+        0%{box-shadow:0 0 0 0 rgba(0,113,227,.35)}
+        70%{box-shadow:0 0 0 12px rgba(0,113,227,0)}
+        100%{box-shadow:0 0 0 0 rgba(0,113,227,0)}
+    }
+    @keyframes gradientFlow{
+        0%{background-position:0% 50%}
+        50%{background-position:100% 50%}
+        100%{background-position:0% 50%}
     }
     @media (max-width: 767px){
         .piplio-interest-widget{right:12px;top:auto;bottom:12px;transform:none}

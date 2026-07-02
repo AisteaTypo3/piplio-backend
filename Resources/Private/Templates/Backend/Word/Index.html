@@ -2,16 +2,19 @@
       xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 
+<f:variable name="deleteConfirmText" value="{f:translate(key: 'backend.table.deleteConfirm', extensionName: 'PiplioBackend')}" />
+<f:variable name="searchPlaceholder" value="{f:translate(key: 'backend.filter.searchPlaceholder', extensionName: 'PiplioBackend')}" />
+
 <f:flashMessages />
 
 <div class="px-3 py-3 px-xl-4">
     <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
         <div>
-            <h2 class="h4 mb-1">Piplio Daten</h2>
-            <p class="text-muted mb-0">Backend-Uebersicht fuer die Wortdaten, die spaeter per API an die Piplio App geliefert werden.</p>
+            <h2 class="h4 mb-1"><f:translate key="module.title" extensionName="PiplioBackend" /></h2>
+            <p class="text-muted mb-0"><f:translate key="backend.header.description" extensionName="PiplioBackend" /></p>
         </div>
         <div class="text-muted small">
-            API-Basis: <code>/api/piplio/words</code>
+            <f:translate key="backend.apiBase" extensionName="PiplioBackend" />: <code>/api/piplio/words</code>
         </div>
     </div>
 
@@ -19,7 +22,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Datensaetze gesamt</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.totalRecords" extensionName="PiplioBackend" /></div>
                     <div class="display-6">{stats.total}</div>
                 </div>
             </div>
@@ -27,7 +30,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Sichtbar in API</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.visible" extensionName="PiplioBackend" /></div>
                     <div class="display-6 text-success">{stats.visible}</div>
                 </div>
             </div>
@@ -35,7 +38,7 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Versteckt</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.hidden" extensionName="PiplioBackend" /></div>
                     <div class="display-6 text-warning">{stats.hidden}</div>
                 </div>
             </div>
@@ -46,7 +49,7 @@
         <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Interesse-Eintraege gesamt</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.interestTotal" extensionName="PiplioBackend" /></div>
                     <div class="display-6">{interestStats.total}</div>
                 </div>
             </div>
@@ -54,7 +57,7 @@
         <div class="col-md-4 col-lg-2">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Letzte 24h</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.last24Hours" extensionName="PiplioBackend" /></div>
                     <div class="display-6 text-primary">{interestStats.last24Hours}</div>
                 </div>
             </div>
@@ -62,7 +65,7 @@
         <div class="col-md-4 col-lg-2">
             <div class="card h-100">
                 <div class="card-body">
-                    <div class="text-muted small mb-1">Letzte 7 Tage</div>
+                    <div class="text-muted small mb-1"><f:translate key="backend.stats.last7Days" extensionName="PiplioBackend" /></div>
                     <div class="display-6 text-info">{interestStats.last7Days}</div>
                 </div>
             </div>
@@ -70,7 +73,7 @@
         <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <strong>Top Seiten</strong>
+                    <strong><f:translate key="backend.topPages" extensionName="PiplioBackend" /></strong>
                 </div>
                 <div class="card-body">
                     <f:if condition="{topInterestPages -> f:count()} > 0">
@@ -83,7 +86,7 @@
                                             <span class="badge badge-light border text-dark">{page.leadCount}</span>
                                         </div>
                                         <div class="small text-muted">
-                                            PID {page.sourcePageId}
+                                            <f:translate key="backend.pageId" extensionName="PiplioBackend" arguments="{0: page.sourcePageId}" />
                                             <f:if condition="{page.pageUrl}">
                                                 • <a href="{page.pageUrl}" target="_blank" rel="noreferrer">{page.pageUrl}</a>
                                             </f:if>
@@ -93,7 +96,7 @@
                             </div>
                         </f:then>
                         <f:else>
-                            <div class="text-muted small">Noch keine Quellseiten mit Leads vorhanden.</div>
+                            <div class="text-muted small"><f:translate key="backend.topPages.empty" extensionName="PiplioBackend" /></div>
                         </f:else>
                     </f:if>
                 </div>
@@ -105,11 +108,11 @@
         <div class="col-12">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <strong>Neueste Interessenten</strong>
+                    <strong><f:translate key="backend.recentInterests" extensionName="PiplioBackend" /></strong>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small">{recentInterests -> f:count()} Eintraege</span>
+                        <span class="text-muted small">{recentInterests -> f:count()} <f:translate key="backend.entries" extensionName="PiplioBackend" /></span>
                         <f:link.action action="exportInterests" class="btn btn-sm btn-default">
-                            Export CSV
+                            <f:translate key="backend.exportCsv" extensionName="PiplioBackend" />
                         </f:link.action>
                     </div>
                 </div>
@@ -120,12 +123,12 @@
                                 <table class="table table-striped table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Name</th>
-                                            <th>E-Mail</th>
-                                            <th>Quelle</th>
-                                            <th>Consent</th>
-                                            <th>Erfasst</th>
-                                            <th class="text-end">Aktionen</th>
+                                            <th><f:translate key="backend.table.name" extensionName="PiplioBackend" /></th>
+                                            <th><f:translate key="backend.table.email" extensionName="PiplioBackend" /></th>
+                                            <th><f:translate key="backend.table.source" extensionName="PiplioBackend" /></th>
+                                            <th><f:translate key="backend.table.consent" extensionName="PiplioBackend" /></th>
+                                            <th><f:translate key="backend.table.created" extensionName="PiplioBackend" /></th>
+                                            <th class="text-end"><f:translate key="backend.table.actions" extensionName="PiplioBackend" /></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -158,9 +161,9 @@
                                                         <button
                                                             type="submit"
                                                             class="btn btn-sm btn-danger"
-                                                            onclick="return confirm('Eintrag wirklich loeschen?');"
+                                                            onclick="return confirm('{deleteConfirmText}');"
                                                         >
-                                                            Loeschen
+                                                            <f:translate key="backend.table.delete" extensionName="PiplioBackend" />
                                                         </button>
                                                     </f:form>
                                                 </td>
@@ -172,7 +175,7 @@
                         </f:then>
                         <f:else>
                             <div class="p-4 text-muted">
-                                Bisher wurden noch keine Interessenten gespeichert.
+                                <f:translate key="backend.emptyInterests" extensionName="PiplioBackend" />
                             </div>
                         </f:else>
                     </f:if>
@@ -185,7 +188,7 @@
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <strong>Nach Thema</strong>
+                    <strong><f:translate key="backend.byTopic" extensionName="PiplioBackend" /></strong>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
@@ -199,7 +202,7 @@
         <div class="col-lg-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <strong>Nach Schwierigkeitsgrad</strong>
+                    <strong><f:translate key="backend.byDifficulty" extensionName="PiplioBackend" /></strong>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
@@ -214,25 +217,25 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <strong>Filter</strong>
+            <strong><f:translate key="backend.filters" extensionName="PiplioBackend" /></strong>
         </div>
         <div class="card-body">
             <f:form action="index" method="post" class="row g-3 align-items-end">
                 <div class="col-lg-4">
-                    <label class="form-label">Thema</label>
+                    <label class="form-label"><f:translate key="backend.filter.topic" extensionName="PiplioBackend" /></label>
                     <f:form.select name="topic" options="{topicOptions}" optionValueField="value" optionLabelField="label" value="{filters.topic}" class="form-select" />
                 </div>
                 <div class="col-lg-3">
-                    <label class="form-label">Level</label>
+                    <label class="form-label"><f:translate key="backend.filter.level" extensionName="PiplioBackend" /></label>
                     <f:form.select name="difficulty" options="{difficultyOptions}" optionValueField="value" optionLabelField="label" value="{filters.difficulty}" class="form-select" />
                 </div>
                 <div class="col-lg-3">
-                    <label class="form-label">Suche</label>
-                    <f:form.textfield name="q" value="{filters.q}" class="form-control" placeholder="Wort suchen" />
+                    <label class="form-label"><f:translate key="backend.filter.search" extensionName="PiplioBackend" /></label>
+                    <f:form.textfield name="q" value="{filters.q}" class="form-control" placeholder="{searchPlaceholder}" />
                 </div>
                 <div class="col-lg-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100">Filtern</button>
-                    <f:link.action action="index" class="btn btn-default">Reset</f:link.action>
+                    <button type="submit" class="btn btn-primary w-100"><f:translate key="backend.filter.submit" extensionName="PiplioBackend" /></button>
+                    <f:link.action action="index" class="btn btn-default"><f:translate key="backend.filter.reset" extensionName="PiplioBackend" /></f:link.action>
                 </div>
             </f:form>
         </div>
@@ -240,7 +243,7 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <strong>API Beispiele</strong>
+            <strong><f:translate key="backend.apiExamples" extensionName="PiplioBackend" /></strong>
         </div>
         <div class="card-body">
             <div class="d-flex flex-column gap-2">
@@ -253,8 +256,8 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <strong>Wortdaten</strong>
-            <span class="text-muted small">{rows -> f:count()} Treffer</span>
+            <strong><f:translate key="backend.wordData" extensionName="PiplioBackend" /></strong>
+            <span class="text-muted small">{rows -> f:count()} <f:translate key="backend.results" extensionName="PiplioBackend" /></span>
         </div>
         <div class="card-body p-0">
             <f:if condition="{rows -> f:count()} > 0">
@@ -263,13 +266,13 @@
                         <table class="table table-striped table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Wort</th>
-                                    <th>Thema</th>
-                                    <th>Level</th>
-                                    <th>Status</th>
-                                    <th>Details</th>
-                                    <th>PID</th>
-                                    <th>Aktualisiert</th>
+                                    <th><f:translate key="backend.table.word" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.topic" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.level" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.status" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.details" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.pid" extensionName="PiplioBackend" /></th>
+                                    <th><f:translate key="backend.table.updated" extensionName="PiplioBackend" /></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -298,7 +301,7 @@
                 </f:then>
                 <f:else>
                     <div class="p-4 text-muted">
-                        Keine Datensaetze fuer die aktuellen Filter gefunden.
+                        <f:translate key="backend.emptyWords" extensionName="PiplioBackend" />
                     </div>
                 </f:else>
             </f:if>

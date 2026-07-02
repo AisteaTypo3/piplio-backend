@@ -9,6 +9,7 @@ use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 final class InterestLeadService
 {
@@ -35,7 +36,7 @@ final class InterestLeadService
             return [
                 'ok' => true,
                 'status' => 200,
-                'message' => 'Danke, Ihre Anfrage wurde entgegengenommen.',
+                'message' => $this->translate('message.accepted'),
             ];
         }
 
@@ -43,7 +44,7 @@ final class InterestLeadService
             return [
                 'ok' => false,
                 'status' => 422,
-                'message' => 'Bitte geben Sie einen gueltigen Namen ein.',
+                'message' => $this->translate('message.invalidName'),
             ];
         }
 
@@ -51,7 +52,7 @@ final class InterestLeadService
             return [
                 'ok' => false,
                 'status' => 422,
-                'message' => 'Bitte geben Sie eine gueltige E-Mail-Adresse ein.',
+                'message' => $this->translate('message.invalidEmail'),
             ];
         }
 
@@ -59,7 +60,7 @@ final class InterestLeadService
             return [
                 'ok' => false,
                 'status' => 422,
-                'message' => 'Bitte stimmen Sie der Verarbeitung Ihrer Daten zu.',
+                'message' => $this->translate('message.privacyRequired'),
             ];
         }
 
@@ -77,7 +78,7 @@ final class InterestLeadService
         return [
             'ok' => true,
             'status' => 200,
-            'message' => 'Danke, Ihre E-Mail wurde eingetragen. Wir halten Sie auf dem Laufenden.',
+            'message' => $this->translate('message.success'),
         ];
     }
 
@@ -180,7 +181,7 @@ final class InterestLeadService
                 ->fetchOne();
 
             if ($recentIpCount >= $ipLimit) {
-                return 'Zu viele Anfragen in kurzer Zeit. Bitte versuchen Sie es spaeter erneut.';
+                return $this->translate('message.tooManyRequests');
             }
         }
 
@@ -199,7 +200,7 @@ final class InterestLeadService
             ->fetchOne();
 
         if ($recentEmailCount >= $emailLimit) {
-            return 'Diese E-Mail-Adresse wurde kuerzlich bereits eingetragen.';
+            return $this->translate('message.duplicateEmail');
         }
 
         return null;
@@ -223,5 +224,10 @@ final class InterestLeadService
     private function limitString(string $value, int $maxLength): string
     {
         return mb_substr(trim($value), 0, $maxLength);
+    }
+
+    private function translate(string $key): string
+    {
+        return (string)(LocalizationUtility::translate($key, 'PiplioBackend') ?? $key);
     }
 }
