@@ -22,6 +22,7 @@ class SeedWordsCommand extends Command
     protected function configure(): void
     {
         $this->addOption('force', 'f', InputOption::VALUE_NONE, 'Re-seed even if data already exists');
+        $this->addOption('truncate', 't', InputOption::VALUE_NONE, 'Truncate the table before re-seeding. Only valid together with --force');
         $this->addOption('pid', null, InputOption::VALUE_REQUIRED, 'Page ID to assign records to', 1);
     }
 
@@ -30,6 +31,12 @@ class SeedWordsCommand extends Command
         $connection = $this->connectionPool->getConnectionForTable('tx_pipliobackend_word');
         $pid        = (int)$input->getOption('pid');
         $force      = (bool)$input->getOption('force');
+        $truncate   = (bool)$input->getOption('truncate');
+
+        if ($truncate && !$force) {
+            $output->writeln('<error>Use --truncate only together with --force.</error>');
+            return Command::INVALID;
+        }
 
         $existing = $connection->count('*', 'tx_pipliobackend_word', ['deleted' => 0]);
         if ($existing > 0 && !$force) {
@@ -38,6 +45,10 @@ class SeedWordsCommand extends Command
         }
 
         if ($force) {
+            if (!$truncate) {
+                $output->writeln('<error>Refusing to replace existing data without --truncate. Use --force --truncate for destructive reseeding.</error>');
+                return Command::INVALID;
+            }
             $connection->truncate('tx_pipliobackend_word');
             $output->writeln('<comment>Table truncated.</comment>');
         }

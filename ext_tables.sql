@@ -8,5 +8,7 @@ CREATE TABLE tx_pipliobackend_word (
     plural_form varchar(255) NOT NULL DEFAULT '',
     rhyme_words varchar(1000) NOT NULL DEFAULT '',
     no_rhyme_words varchar(1000) NOT NULL DEFAULT '',
-    wrong_options varchar(1000) NOT NULL DEFAULT ''
+    wrong_options varchar(1000) NOT NULL DEFAULT '',
+    KEY topic_difficulty (topic, difficulty),
+    UNIQUE KEY topic_difficulty_word (topic, difficulty, word(191))
 );

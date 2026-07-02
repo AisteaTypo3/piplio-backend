@@ -8,10 +8,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class ApiMiddleware implements MiddlewareInterface
@@ -26,6 +28,7 @@ class ApiMiddleware implements MiddlewareInterface
     ];
     private const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'];
     private const ALLOWED_QUERY_PARAMS = ['topic', 'difficulty'];
+    private ?LoggerInterface $logger = null;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -122,11 +125,22 @@ class ApiMiddleware implements MiddlewareInterface
         $rows = $qb->executeQuery()->fetchAllAssociative();
 
         $payload = [];
+        $skippedRows = 0;
         foreach ($rows as $row) {
             $mappedRow = $this->mapRow($row);
             if ($mappedRow !== null) {
                 $payload[] = $mappedRow;
+            } else {
+                $skippedRows++;
             }
+        }
+
+        if ($skippedRows > 0) {
+            $this->getLogger()->warning('Skipped invalid Piplio API rows.', [
+                'topic' => $topic,
+                'difficulty' => $difficulty,
+                'skippedRows' => $skippedRows,
+            ]);
         }
 
         return $payload;
@@ -248,6 +262,15 @@ class ApiMiddleware implements MiddlewareInterface
         }
 
         return true;
+    }
+
+    private function getLogger(): LoggerInterface
+    {
+        if ($this->logger === null) {
+            $this->logger = GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__);
+        }
+
+        return $this->logger;
     }
 
     private function mapArtikelRow(string $word, array $row): ?array
