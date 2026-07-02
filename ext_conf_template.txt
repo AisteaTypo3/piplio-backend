@@ -1,0 +1,6 @@
+#
+# Extension Configuration template
+#
+
+# cat=api//a; type=string; label=API Key for Piplio app
+apiKey =

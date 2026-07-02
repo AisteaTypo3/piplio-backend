@@ -8,6 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
@@ -15,7 +16,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class ApiMiddleware implements MiddlewareInterface
 {
-    private const API_PREFIX = '/api/piplio/words';
+    private const API_PREFIXES = ['/api/piplio/words', '/api/piplio/v1/words'];
     private const ALLOWED_TOPICS = [
         'deutsch_artikel',
         'deutsch_reime',
@@ -24,12 +25,13 @@ class ApiMiddleware implements MiddlewareInterface
         'deutsch_plural',
     ];
     private const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'];
+    private const ALLOWED_QUERY_PARAMS = ['topic', 'difficulty'];
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $path = $request->getUri()->getPath();
 
-        if (!str_starts_with($path, self::API_PREFIX)) {
+        if (!$this->matchesApiPath($path)) {
             return $handler->handle($request);
         }
 
@@ -39,7 +41,26 @@ class ApiMiddleware implements MiddlewareInterface
             ]));
         }
 
+        $configuredApiKey = $this->getConfiguredApiKey();
+        if ($configuredApiKey === '') {
+            return $this->withCorsHeaders(new JsonResponse([
+                'error' => 'API key is not configured.',
+            ], 503));
+        }
+
+        if (!$this->isAuthorized($request, $configuredApiKey)) {
+            return $this->withCorsHeaders(new JsonResponse([
+                'error' => 'Unauthorized.',
+            ], 401));
+        }
+
         $params     = $request->getQueryParams();
+        if (!$this->hasOnlyAllowedQueryParams($params)) {
+            return $this->withCorsHeaders(new JsonResponse([
+                'error' => 'Only topic and difficulty query parameters are allowed.',
+            ], 400));
+        }
+
         $topic      = $this->normalizeTopic((string)($params['topic'] ?? ''));
         $difficulty = $this->normalizeDifficulty((string)($params['difficulty'] ?? ''));
 
@@ -57,16 +78,20 @@ class ApiMiddleware implements MiddlewareInterface
             ], 400));
         }
 
+        if ($topic === '' || $difficulty === '') {
+            return $this->withCorsHeaders(new JsonResponse([
+                'error' => 'Both topic and difficulty are required.',
+                'allowedTopics' => self::ALLOWED_TOPICS,
+                'allowedDifficulties' => self::ALLOWED_DIFFICULTIES,
+            ], 400));
+        }
+
         $words = $this->fetchWords($topic, $difficulty);
 
         return $this->withCorsHeaders(new JsonResponse([
             'topic'      => $topic,
             'difficulty' => $difficulty,
             'count'      => count($words),
-            'filtersApplied' => [
-                'topic' => $topic !== '',
-                'difficulty' => $difficulty !== '',
-            ],
             'words'      => $words,
         ]));
     }
@@ -96,55 +121,34 @@ class ApiMiddleware implements MiddlewareInterface
 
         $rows = $qb->executeQuery()->fetchAllAssociative();
 
-        $includeMetaFields = !($topic !== '' && $difficulty !== '');
-
-        return array_map(
-            fn(array $row): array => $this->mapRow($row, $includeMetaFields),
-            $rows
-        );
-    }
-
-    private function mapRow(array $row, bool $includeMetaFields): array
-    {
-        $word  = $row['word'];
-        $topic = $row['topic'];
-        $difficulty = (string)($row['difficulty'] ?? '');
-
-        $payload = match ($topic) {
-            'deutsch_artikel' => [
-                'word'    => $word,
-                'artikel' => $row['artikel'],
-            ],
-            'deutsch_reime' => [
-                'word'      => $word,
-                'rhymes'    => $this->splitList($row['rhyme_words']),
-                'noRhymes'  => $this->splitList($row['no_rhyme_words']),
-            ],
-            'deutsch_gross_klein' => [
-                'correct' => (bool)$row['is_nomen'] ? ucfirst($word) : lcfirst($word),
-                'wrong'   => (bool)$row['is_nomen'] ? lcfirst($word) : ucfirst($word),
-                'isNomen' => (bool)$row['is_nomen'],
-            ],
-            'deutsch_wortarten' => [
-                'word'     => $word,
-                'wordType' => $row['word_type'],
-            ],
-            'deutsch_plural' => [
-                'singular' => $word,
-                'plural'   => $row['plural_form'],
-                'wrong'    => $this->splitList($row['wrong_options']),
-            ],
-            default => ['word' => $word],
-        };
-
-        if (!$includeMetaFields) {
-            return $payload;
+        $payload = [];
+        foreach ($rows as $row) {
+            $mappedRow = $this->mapRow($row);
+            if ($mappedRow !== null) {
+                $payload[] = $mappedRow;
+            }
         }
 
-        return array_merge([
-            'topic' => $topic,
-            'difficulty' => $difficulty,
-        ], $payload);
+        return $payload;
+    }
+
+    private function mapRow(array $row): ?array
+    {
+        $word = trim((string)($row['word'] ?? ''));
+        $topic = (string)($row['topic'] ?? '');
+
+        if ($word === '' || !in_array($topic, self::ALLOWED_TOPICS, true)) {
+            return null;
+        }
+
+        return match ($topic) {
+            'deutsch_artikel' => $this->mapArtikelRow($word, $row),
+            'deutsch_reime' => $this->mapReimeRow($word, $row),
+            'deutsch_gross_klein' => $this->mapGrossKleinRow($word, $row),
+            'deutsch_wortarten' => $this->mapWortartenRow($word, $row),
+            'deutsch_plural' => $this->mapPluralRow($word, $row),
+            default => null,
+        };
     }
 
     private function splitList(string $value): array
@@ -180,7 +184,142 @@ class ApiMiddleware implements MiddlewareInterface
         return $response
             ->withHeader('Access-Control-Allow-Origin', '*')
             ->withHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-            ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key')
             ->withHeader('Access-Control-Max-Age', '86400');
+    }
+
+    private function matchesApiPath(string $path): bool
+    {
+        foreach (self::API_PREFIXES as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getConfiguredApiKey(): string
+    {
+        try {
+            $settings = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('piplio_backend');
+        } catch (\Throwable) {
+            return '';
+        }
+
+        if (!is_array($settings)) {
+            return '';
+        }
+
+        return trim((string)($settings['apiKey'] ?? ''));
+    }
+
+    private function isAuthorized(ServerRequestInterface $request, string $configuredApiKey): bool
+    {
+        $bearerToken = $this->extractBearerToken($request->getHeaderLine('Authorization'));
+        $headerToken = trim($request->getHeaderLine('X-Piplio-Api-Key'));
+
+        if ($bearerToken !== '' && hash_equals($configuredApiKey, $bearerToken)) {
+            return true;
+        }
+
+        if ($headerToken !== '' && hash_equals($configuredApiKey, $headerToken)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function extractBearerToken(string $authorizationHeader): string
+    {
+        if (preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authorizationHeader, $matches) !== 1) {
+            return '';
+        }
+
+        return trim((string)($matches[1] ?? ''));
+    }
+
+    private function hasOnlyAllowedQueryParams(array $params): bool
+    {
+        foreach (array_keys($params) as $key) {
+            if (!in_array((string)$key, self::ALLOWED_QUERY_PARAMS, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function mapArtikelRow(string $word, array $row): ?array
+    {
+        $artikel = trim((string)($row['artikel'] ?? ''));
+        if (!in_array($artikel, ['der', 'die', 'das'], true)) {
+            return null;
+        }
+
+        return [
+            'word' => $word,
+            'artikel' => $artikel,
+        ];
+    }
+
+    private function mapReimeRow(string $word, array $row): ?array
+    {
+        $rhymes = $this->splitList((string)($row['rhyme_words'] ?? ''));
+        $noRhymes = $this->splitList((string)($row['no_rhyme_words'] ?? ''));
+        if ($rhymes === [] || $noRhymes === []) {
+            return null;
+        }
+
+        return [
+            'word' => $word,
+            'rhymes' => $rhymes,
+            'noRhymes' => $noRhymes,
+        ];
+    }
+
+    private function mapGrossKleinRow(string $word, array $row): ?array
+    {
+        $isNomen = (bool)($row['is_nomen'] ?? false);
+        $correct = $isNomen ? ucfirst($word) : lcfirst($word);
+        $wrong = $isNomen ? lcfirst($word) : ucfirst($word);
+
+        if ($correct === '' || $wrong === '') {
+            return null;
+        }
+
+        return [
+            'correct' => $correct,
+            'wrong' => $wrong,
+            'isNomen' => $isNomen,
+        ];
+    }
+
+    private function mapWortartenRow(string $word, array $row): ?array
+    {
+        $wordType = trim((string)($row['word_type'] ?? ''));
+        if (!in_array($wordType, ['Nomen', 'Verb', 'Adjektiv'], true)) {
+            return null;
+        }
+
+        return [
+            'word' => $word,
+            'wordType' => $wordType,
+        ];
+    }
+
+    private function mapPluralRow(string $word, array $row): ?array
+    {
+        $plural = trim((string)($row['plural_form'] ?? ''));
+        $wrong = $this->splitList((string)($row['wrong_options'] ?? ''));
+        if ($plural === '' || $wrong === []) {
+            return null;
+        }
+
+        return [
+            'singular' => $word,
+            'plural' => $plural,
+            'wrong' => $wrong,
+        ];
     }
 }
