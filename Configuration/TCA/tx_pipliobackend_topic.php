@@ -72,6 +72,7 @@ return [
                     ['label' => 'wall_math', 'value' => 'wall_math'],
                     ['label' => 'clock', 'value' => 'clock'],
                     ['label' => 'money', 'value' => 'money'],
+                    ['label' => 'write_digits', 'value' => 'write_digits'],
                     ['label' => 'deutsch_artikel', 'value' => 'deutsch_artikel'],
                     ['label' => 'deutsch_reime', 'value' => 'deutsch_reime'],
                     ['label' => 'deutsch_gross_klein', 'value' => 'deutsch_gross_klein'],
