@@ -129,6 +129,34 @@
             <trans-unit id="tca.word.wrongOptions"><target>Falsche Antworten (kommagetrennt)</target></trans-unit>
             <trans-unit id="tca.tab.general"><target>Allgemein</target></trans-unit>
             <trans-unit id="tca.tab.topicDetails"><target>Thema-Details</target></trans-unit>
+            <trans-unit id="tca.package.title"><target>Piplio Paket</target></trans-unit>
+            <trans-unit id="tca.package.hidden"><target>Versteckt</target></trans-unit>
+            <trans-unit id="tca.package.packageId"><target>Paket-ID</target></trans-unit>
+            <trans-unit id="tca.package.packageTitle"><target>Titel</target></trans-unit>
+            <trans-unit id="tca.package.description"><target>Beschreibung</target></trans-unit>
+            <trans-unit id="tca.package.recommendedGrade"><target>Empfohlene Klasse</target></trans-unit>
+            <trans-unit id="tca.topic.title"><target>Piplio Thema</target></trans-unit>
+            <trans-unit id="tca.topic.hidden"><target>Versteckt</target></trans-unit>
+            <trans-unit id="tca.topic.topicId"><target>Thema-ID</target></trans-unit>
+            <trans-unit id="tca.topic.topicTitle"><target>Titel</target></trans-unit>
+            <trans-unit id="tca.topic.subtitle"><target>Untertitel</target></trans-unit>
+            <trans-unit id="tca.topic.colorKey"><target>Farbschluessel</target></trans-unit>
+            <trans-unit id="tca.topic.sortOrder"><target>Sortierung</target></trans-unit>
+            <trans-unit id="tca.topic.package"><target>Paket</target></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.title"><target>Piplio Klassenempfehlung</target></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.hidden"><target>Versteckt</target></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.grade"><target>Klasse</target></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.package"><target>Paket</target></trans-unit>
+            <trans-unit id="tca.badge.title"><target>Piplio Abzeichen</target></trans-unit>
+            <trans-unit id="tca.badge.hidden"><target>Versteckt</target></trans-unit>
+            <trans-unit id="tca.badge.badgeId"><target>Abzeichen-ID</target></trans-unit>
+            <trans-unit id="tca.badge.category"><target>Kategorie</target></trans-unit>
+            <trans-unit id="tca.badge.badgeTitle"><target>Titel</target></trans-unit>
+            <trans-unit id="tca.badge.description"><target>Beschreibung</target></trans-unit>
+            <trans-unit id="tca.badge.icon"><target>Icon</target></trans-unit>
+            <trans-unit id="tca.badge.xpRequired"><target>Benoetigte XP (leer lassen, falls ungenutzt)</target></trans-unit>
+            <trans-unit id="tca.badge.streakRequired"><target>Benoetigte Streak-Tage (leer lassen, falls ungenutzt)</target></trans-unit>
+            <trans-unit id="tca.badge.totalSessionsRequired"><target>Benoetigte Gesamtrunden (leer lassen, falls ungenutzt)</target></trans-unit>
         </body>
     </file>
 </xliff>

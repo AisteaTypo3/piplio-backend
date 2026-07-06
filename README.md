@@ -135,6 +135,10 @@ The extension stores data in:
 
 - `tx_pipliobackend_word`
 - `tx_pipliobackend_interest`
+- `tx_pipliobackend_package`
+- `tx_pipliobackend_topic`
+- `tx_pipliobackend_graderecommendation`
+- `tx_pipliobackend_badge`
 
 Interest fields:
 
@@ -172,8 +176,12 @@ Supported endpoints:
 
 - `/api/piplio/words`
 - `/api/piplio/v1/words`
+- `/api/piplio/topics`
+- `/api/piplio/v1/topics`
+- `/api/piplio/badges`
+- `/api/piplio/v1/badges`
 
-In production you should use the versioned endpoint:
+In production you should use the versioned endpoints, e.g.:
 
 - `/api/piplio/v1/words`
 
@@ -350,6 +358,57 @@ Response:
 }
 ```
 
+### 6. Topics catalog (`GET /api/piplio/v1/topics`)
+
+No query parameters. Returns the full package/topic catalog plus grade recommendations in one payload. A record is only included if it (and, for topics, its related package) is not `hidden`/`deleted`. Since the app only overwrites its built-in defaults when the response is non-empty, do not remove all records to "clear" content — hide/delete the ones you don't want served instead.
+
+Response:
+
+```json
+{
+  "packages": [
+    { "id": "grade1_numbers20", "title": "Zahlenraum bis 20", "description": "…", "recommendedGrade": "1" }
+  ],
+  "topics": [
+    { "id": "numbers20", "title": "Zahlen bis 20", "subtitle": "Zählen, ordnen & vergleichen", "colorKey": "numbers20", "order": 0, "packageId": "grade1_numbers20" }
+  ],
+  "gradeRecommendations": {
+    "1": ["grade1_numbers20", "grade1_arithmetic20", "grade1_numbers100", "alltag_1", "deutsch_1"],
+    "2": ["grade2_arithmetic100", "alltag_1", "deutsch_1", "deutsch_23"],
+    "3": ["grade3_multiplication_intro", "deutsch_23"]
+  }
+}
+```
+
+Important:
+
+- `package.id` and `topic.id` are **immutable join keys** referenced by locally stored app progress. Never rename them once live.
+- `topic.colorKey` must be one of the 19 fixed values in the TCA select field. An unknown value is not rejected by the API, but the app falls back to a generic color/icon for it.
+- Adding a brand-new `topic.id` describes metadata for a topic the app doesn't know yet — the app cannot generate exercises for it without an app-side release. This endpoint edits existing topics, it does not create new playable ones.
+- `gradeRecommendations` is independent of each package's `recommendedGrade` — a package can be recommended for one grade label but auto-enabled under several grades.
+- Store `tx_pipliobackend_package`, `tx_pipliobackend_topic` and `tx_pipliobackend_graderecommendation` records on the **same storage page**. The `package` relation field in the topic and grade-recommendation records only lists packages on that same page.
+
+### 7. Badges catalog (`GET /api/piplio/v1/badges`)
+
+No query parameters. Returns only the threshold-based badges (`milestone` and `streak` categories) — topic-mastery badges, `all_rounder`, `perfect_rounds`, and voucher badges are generated/awarded entirely in the app and are intentionally not served here.
+
+Response:
+
+```json
+{
+  "badges": [
+    { "id": "xp_50", "category": "milestone", "title": "Fleißige Biene", "description": "50 XP gesammelt", "icon": "star", "xpRequired": 50 },
+    { "id": "streak_3", "category": "streak", "title": "3 Tage am Ball", "description": "3 Tage hintereinander gespielt", "icon": "flame", "streakRequired": 3 }
+  ]
+}
+```
+
+Important:
+
+- `badge.id` is immutable — local `earnedBadges` progress is keyed by it.
+- `badge.icon` must be one of the 15 fixed values in the TCA select field.
+- Exactly one of `xpRequired`, `streakRequired`, `totalSessionsRequired` should be set per badge. A field left empty in TYPO3 is omitted from the JSON entirely (never sent as `0`), since `0` would mean "award immediately".
+
 ## Backend Content Maintenance
 
 You can add new content in three ways:
@@ -415,6 +474,15 @@ Warning:
 
 - `--force --truncate` is destructive
 - only use it when you really want to replace the full dataset
+
+To seed the topics/packages catalog and the badges catalog:
+
+```bash
+vendor/bin/typo3 piplio:seed-topics --pid 1
+vendor/bin/typo3 piplio:seed-badges --pid 1
+```
+
+Both support the same `--force`/`--truncate`/`--pid` options as `piplio:seed`.
 
 ### Tutorial 4: Add a new article record in TYPO3
 
@@ -558,8 +626,16 @@ For production content changes:
 - [ext_conf_template.txt](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/ext_conf_template.txt:1)
 - [ext_tables.sql](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/ext_tables.sql:1)
 - [Classes/Middleware/ApiMiddleware.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Middleware/ApiMiddleware.php:1)
+- [Classes/Middleware/TopicsApiMiddleware.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Middleware/TopicsApiMiddleware.php:1)
+- [Classes/Middleware/BadgesApiMiddleware.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Middleware/BadgesApiMiddleware.php:1)
 - [Classes/Command/SeedWordsCommand.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Command/SeedWordsCommand.php:1)
+- [Classes/Command/SeedTopicsCommand.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Command/SeedTopicsCommand.php:1)
+- [Classes/Command/SeedBadgesCommand.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Classes/Command/SeedBadgesCommand.php:1)
 - [Configuration/TCA/tx_pipliobackend_word.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_word.php:1)
+- [Configuration/TCA/tx_pipliobackend_package.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_package.php:1)
+- [Configuration/TCA/tx_pipliobackend_topic.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_topic.php:1)
+- [Configuration/TCA/tx_pipliobackend_graderecommendation.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_graderecommendation.php:1)
+- [Configuration/TCA/tx_pipliobackend_badge.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_badge.php:1)
 - [Resources/Private/InitialData.sql](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Resources/Private/InitialData.sql:1)
 
 ## Summary

@@ -42,3 +42,70 @@ CREATE TABLE tx_pipliobackend_interest (
     KEY remote_address_crdate (remote_address(32), crdate),
     KEY email_crdate (email(191), crdate)
 );
+
+CREATE TABLE tx_pipliobackend_package (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    package_id varchar(64) NOT NULL DEFAULT '',
+    title varchar(255) NOT NULL DEFAULT '',
+    description text,
+    recommended_grade varchar(1) NOT NULL DEFAULT '1',
+    PRIMARY KEY (uid),
+    UNIQUE KEY package_id (package_id)
+);
+
+CREATE TABLE tx_pipliobackend_topic (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    topic_id varchar(64) NOT NULL DEFAULT '',
+    title varchar(255) NOT NULL DEFAULT '',
+    subtitle varchar(255) NOT NULL DEFAULT '',
+    color_key varchar(32) NOT NULL DEFAULT '',
+    sort_order int(11) NOT NULL DEFAULT 0,
+    package int(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (uid),
+    UNIQUE KEY topic_id (topic_id),
+    KEY package (package)
+);
+
+CREATE TABLE tx_pipliobackend_graderecommendation (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    sorting int(11) NOT NULL DEFAULT 0,
+    grade varchar(1) NOT NULL DEFAULT '1',
+    package int(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (uid),
+    KEY grade (grade),
+    KEY package (package)
+);
+
+CREATE TABLE tx_pipliobackend_badge (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    badge_id varchar(64) NOT NULL DEFAULT '',
+    category varchar(20) NOT NULL DEFAULT 'milestone',
+    title varchar(255) NOT NULL DEFAULT '',
+    description text,
+    icon varchar(32) NOT NULL DEFAULT '',
+    xp_required int(11) DEFAULT NULL,
+    streak_required int(11) DEFAULT NULL,
+    total_sessions_required int(11) DEFAULT NULL,
+    PRIMARY KEY (uid),
+    UNIQUE KEY badge_id (badge_id)
+);

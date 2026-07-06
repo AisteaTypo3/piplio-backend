@@ -129,6 +129,34 @@
             <trans-unit id="tca.word.wrongOptions"><source>Wrong answers (comma-separated)</source></trans-unit>
             <trans-unit id="tca.tab.general"><source>General</source></trans-unit>
             <trans-unit id="tca.tab.topicDetails"><source>Topic details</source></trans-unit>
+            <trans-unit id="tca.package.title"><source>Piplio Package</source></trans-unit>
+            <trans-unit id="tca.package.hidden"><source>Hidden</source></trans-unit>
+            <trans-unit id="tca.package.packageId"><source>Package ID</source></trans-unit>
+            <trans-unit id="tca.package.packageTitle"><source>Title</source></trans-unit>
+            <trans-unit id="tca.package.description"><source>Description</source></trans-unit>
+            <trans-unit id="tca.package.recommendedGrade"><source>Recommended grade</source></trans-unit>
+            <trans-unit id="tca.topic.title"><source>Piplio Topic</source></trans-unit>
+            <trans-unit id="tca.topic.hidden"><source>Hidden</source></trans-unit>
+            <trans-unit id="tca.topic.topicId"><source>Topic ID</source></trans-unit>
+            <trans-unit id="tca.topic.topicTitle"><source>Title</source></trans-unit>
+            <trans-unit id="tca.topic.subtitle"><source>Subtitle</source></trans-unit>
+            <trans-unit id="tca.topic.colorKey"><source>Color key</source></trans-unit>
+            <trans-unit id="tca.topic.sortOrder"><source>Sort order</source></trans-unit>
+            <trans-unit id="tca.topic.package"><source>Package</source></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.title"><source>Piplio Grade Recommendation</source></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.hidden"><source>Hidden</source></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.grade"><source>Grade</source></trans-unit>
+            <trans-unit id="tca.gradeRecommendation.package"><source>Package</source></trans-unit>
+            <trans-unit id="tca.badge.title"><source>Piplio Badge</source></trans-unit>
+            <trans-unit id="tca.badge.hidden"><source>Hidden</source></trans-unit>
+            <trans-unit id="tca.badge.badgeId"><source>Badge ID</source></trans-unit>
+            <trans-unit id="tca.badge.category"><source>Category</source></trans-unit>
+            <trans-unit id="tca.badge.badgeTitle"><source>Title</source></trans-unit>
+            <trans-unit id="tca.badge.description"><source>Description</source></trans-unit>
+            <trans-unit id="tca.badge.icon"><source>Icon</source></trans-unit>
+            <trans-unit id="tca.badge.xpRequired"><source>XP required (leave empty if unused)</source></trans-unit>
+            <trans-unit id="tca.badge.streakRequired"><source>Streak days required (leave empty if unused)</source></trans-unit>
+            <trans-unit id="tca.badge.totalSessionsRequired"><source>Total sessions required (leave empty if unused)</source></trans-unit>
         </body>
     </file>
 </xliff>
