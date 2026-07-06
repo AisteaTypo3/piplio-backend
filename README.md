@@ -13,8 +13,12 @@ The extension provides:
 ## Features
 
 - Manage word data in TYPO3
+- Manage the learning-package/topic catalog and grade recommendations in TYPO3
+- Manage milestone/streak badge definitions in TYPO3
 - Collect name/email interest leads directly in TYPO3 without newsletter dispatch
 - Filtered API for app requests by `topic` and `difficulty`
+- Catalog API for packages/topics and grade recommendations
+- Catalog API for badges
 - API key protection via TYPO3 Extension Settings
 - Support for multiple learning types:
   - articles
@@ -22,7 +26,7 @@ The extension provides:
   - uppercase/lowercase
   - word types
   - plural forms
-- seed command for demo or initial data
+- seed commands for demo or initial data (words, topics/packages, badges)
 
 ## Supported Topics
 
@@ -39,6 +43,25 @@ The API supports these `difficulty` values:
 - `easy`
 - `medium`
 - `hard`
+
+### Supported `colorKey` values
+
+`tx_pipliobackend_topic.color_key` is a fixed select with exactly these 19 values (they map to hardcoded icon/color themes in the app; an unmatched value still works but renders a generic fallback):
+
+```
+numbers20, addition20, subtraction20, numbers100, addition100, subtraction100,
+make100, bridge100, times2_5_10, times3_4, division_intro, wall_math, clock, money,
+deutsch_artikel, deutsch_reime, deutsch_gross_klein, deutsch_wortarten, deutsch_plural
+```
+
+### Supported badge `icon` values
+
+`tx_pipliobackend_badge.icon` is a fixed select with exactly these 15 values (an unmatched value still works but renders a generic fallback icon):
+
+```
+rocket, star, star2, trophy, flame, flame2, ice_cream, movie, moon, game,
+crown, shield, lightning, diamond, book
+```
 
 ## Installation
 
@@ -129,6 +152,8 @@ The module shows:
 
 Use this module to inspect the current dataset quickly.
 
+Note: this custom module currently only covers `tx_pipliobackend_word` and `tx_pipliobackend_interest`. Packages, topics, grade recommendations and badges have no dedicated module yet — manage them via TYPO3's standard **Web > List** module (see the tutorials below).
+
 ## Data Model
 
 The extension stores data in:
@@ -148,7 +173,7 @@ Interest fields:
 - `page_url`
 - `source_page_id`
 
-Main fields:
+Word fields (`tx_pipliobackend_word`):
 
 - `topic`
 - `difficulty`
@@ -161,6 +186,47 @@ Main fields:
 - `no_rhyme_words`
 - `wrong_options`
 - `hidden`
+
+Package fields (`tx_pipliobackend_package`):
+
+- `package_id` — immutable join key, referenced by `topic.package` and `graderecommendation.package`
+- `title`
+- `description`
+- `recommended_grade` — `1`, `2`, or `3`
+- `hidden`
+
+Topic fields (`tx_pipliobackend_topic`):
+
+- `topic_id` — immutable join key, referenced by the app's locally stored `topicProgress` and topic-mastery badges
+- `title`
+- `subtitle`
+- `color_key` — fixed select, one of the 19 values listed under [Supported `colorKey` values](#supported-colorkey-values)
+- `sort_order` — ascending; gaps are fine
+- `package` — relation to a `tx_pipliobackend_package` record on the same page
+- `hidden`
+
+Grade recommendation fields (`tx_pipliobackend_graderecommendation`):
+
+- `grade` — `1`, `2`, or `3`
+- `package` — relation to a `tx_pipliobackend_package` record on the same page
+- `sorting` — order within the grade's package list
+- `hidden`
+
+One row = "this package is auto-enabled for this grade". A package can have several rows (one per grade it should be recommended under).
+
+Badge fields (`tx_pipliobackend_badge`):
+
+- `badge_id` — immutable join key, referenced by the app's locally stored `earnedBadges`
+- `category` — `milestone` or `streak`
+- `title`
+- `description`
+- `icon` — fixed select, one of the 15 values listed under [Supported badge `icon` values](#supported-badge-icon-values)
+- `xp_required` — leave empty if unused
+- `streak_required` — leave empty if unused
+- `total_sessions_required` — leave empty if unused
+- `hidden`
+
+Set **exactly one** of `xp_required` / `streak_required` / `total_sessions_required` per badge.
 
 ## API
 
@@ -413,11 +479,13 @@ Important:
 
 You can add new content in three ways:
 
-- directly in TYPO3 backend
+- directly in TYPO3 backend (`Web > List`, or the custom module for words/interest)
 - via CLI seed command
 - via SQL import
 
 For normal daily work, use TYPO3 backend editing.
+
+This applies to all content types managed by this extension: words, packages, topics, grade recommendations, and badges.
 
 ## Step-by-Step Tutorial
 
@@ -543,7 +611,70 @@ from these values.
    - `Falsche Antworten` = `Hunds,Hünde,Hunden`
 3. Save the record.
 
-### Tutorial 9: Test the API manually
+### Tutorial 9: Add a new learning package
+
+1. Open `Web > List`, navigate to the storage page/folder used for Piplio records.
+2. Create a new record of table `Piplio Package`.
+3. Set:
+   - `Package ID` = a short, unique, lowercase/underscore id, e.g. `grade1_shapes` — **choose it carefully, it becomes an immutable join key** once topics or grade recommendations reference it, and once the app has any locally enabled-package state referencing it.
+   - `Title` = e.g. `Formen erkennen`
+   - `Description` = free text
+   - `Recommended Grade` = `1`, `2`, or `3` (the label shown as "empfohlen für Klasse X"; this alone does **not** auto-enable the package for that grade — see Tutorial 11)
+4. Save the record and make sure it is not hidden.
+5. A package with no topics assigned to it is harmless but pointless — continue with Tutorial 10 to add topics to it.
+
+### Tutorial 10: Add or edit a topic
+
+1. Create (or open) a record of table `Piplio Topic`.
+2. Set:
+   - `Topic ID` — **only use an id the app already knows** (see [Supported `colorKey` values](#supported-colorkey-values) for the full current list of ids/keys). Inventing a brand-new topic id here does **not** create a playable topic — the app has no exercise generator bound to it and the topic would fail to load. Use this table to edit metadata (title, subtitle, order, package assignment, visibility) of existing topics, not to add new ones.
+   - `Title` / `Subtitle` = free text
+   - `Color Key` = pick from the fixed 19-value select (defaults to matching the topic id)
+   - `Sort Order` = an integer; topics are sorted ascending, gaps are fine
+   - `Package` = select an existing `Piplio Package` record **on the same storage page**
+3. Save and make sure the record is not hidden.
+4. To temporarily remove a topic from the app without losing its data, tick `Hidden` rather than deleting it — deleting orphans any locally stored progress tied to that `topic_id`.
+
+### Tutorial 11: Set or adjust grade recommendations
+
+`gradeRecommendations` (which packages get auto-enabled when a parent picks a grade) is separate from a package's own `Recommended Grade` label, and a package can be recommended under more than one grade.
+
+1. Create a record of table `Piplio Grade Recommendation` for each `(grade, package)` pair you want.
+2. Set:
+   - `Grade` = `1`, `2`, or `3`
+   - `Package` = the `Piplio Package` record to auto-enable for that grade
+3. Save. Repeat for every grade the package should appear under (e.g. a package usable in both grade 1 and grade 2 needs two records, one per grade).
+4. To remove a package from a grade's recommendations, hide or delete the corresponding row — this does not affect the package's own `Recommended Grade` label or its topics.
+
+### Tutorial 12: Add a new badge
+
+1. Create a record of table `Piplio Badge`.
+2. Set:
+   - `Badge ID` = a short, unique, immutable id, e.g. `xp_100000` — local `earnedBadges` progress is keyed by this once players earn it.
+   - `Category` = `milestone` or `streak` (these are the only two categories served by the API — see [What NOT to serve](#what-not-to-serve-from-typo3) below)
+   - `Title` / `Description` = free text
+   - `Icon` = pick from the fixed 15-value select
+   - Set **exactly one** of `XP required`, `Streak days required`, `Total sessions required` — leave the other two empty. A `0` in an unused field would make the badge award immediately, so leave it blank, not zero.
+3. Save and make sure the record is not hidden.
+
+#### What NOT to serve from TYPO3
+
+Some badge kinds are generated or awarded with custom logic in the app and must stay app-side — do not try to recreate them as `tx_pipliobackend_badge` records:
+
+- **Topic-mastery badges** ("Themen-Meister") — one is generated automatically per topic at 3 stars; no TYPO3 record needed.
+- **`all_rounder`** — awarded when every enabled topic has been played once; hardcoded condition, ignores threshold fields.
+- **`perfect_rounds`** — a stacking counter with custom logic; also hardcoded.
+- **Voucher badges** — parent-defined custom rewards created locally in the app, never server-side.
+
+### Tutorial 13: Hide vs. delete — and the "empty response" rule
+
+The app only overwrites its bundled local defaults when an API response is **non-empty**. Practical implications:
+
+- To temporarily remove a topic, package, or badge from what the app sees, tick `Hidden` on that record. Do **not** delete/hide every record of a type hoping to "reset" the app to defaults — an empty `topics`/`badges` array (or a `packages` array that leaves referenced ids missing) is simply **ignored**, not applied.
+- Never rename or reuse a `package_id`, `topic_id`, or `badge_id` that has ever gone live — they are immutable join keys for locally stored app progress (enabled packages, topic progress, earned badges). Renaming orphans that local data.
+- If you need to remove a topic id from `data/topics.ts` generator support first, coordinate with an app release — see Tutorial 10.
+
+### Tutorial 14: Test the API manually
 
 Example with Bearer token:
 
@@ -559,7 +690,17 @@ curl -H "X-Piplio-Api-Key: YOUR_API_KEY" \
   "https://your-domain.tld/api/piplio/v1/words?topic=deutsch_plural&difficulty=medium"
 ```
 
-### Tutorial 10: Troubleshooting
+Topics and badges catalogs (no query parameters):
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://your-domain.tld/api/piplio/v1/topics"
+
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://your-domain.tld/api/piplio/v1/badges"
+```
+
+### Tutorial 15: Troubleshooting
 
 #### Problem: `401 Unauthorized`
 
@@ -594,6 +735,33 @@ Check:
 - are records malformed and being skipped?
 - check TYPO3 logs for skipped invalid rows
 
+#### Problem: a topic doesn't show up in `/api/piplio/v1/topics`
+
+Check:
+
+- is the topic record hidden or deleted?
+- is its assigned `Package` record hidden, deleted, or on a **different storage page**? Topics are only returned if their package is also visible, and the package relation dropdown only lists packages on the same page.
+- does the topic have `topic_id`, `title`, and a resolvable `package` — all three are required or the row is skipped (check TYPO3 logs for a "Skipped invalid Piplio topic rows" warning).
+
+#### Problem: a package is missing from `gradeRecommendations`
+
+Check:
+
+- does a `Piplio Grade Recommendation` record exist for that `(grade, package)` pair? A package's own `Recommended Grade` field does **not** by itself add it to `gradeRecommendations` — see Tutorial 11.
+- is the grade-recommendation record (or its linked package) hidden/deleted?
+
+#### Problem: a badge is missing or shows a generic fallback icon/color
+
+Check:
+
+- for a missing badge: is it hidden/deleted, or missing `badge_id`/`title`/`icon`, or does it have a `category` other than `milestone`/`streak`? (Check TYPO3 logs for "Skipped invalid Piplio badge rows".)
+- for a fallback icon: is `icon` one of the exact 15 supported values? A typo or unsupported value doesn't error, it just renders generically in the app.
+- did you intend to add `all_rounder`, `perfect_rounds`, a topic-mastery badge, or a voucher? Those are intentionally not served from TYPO3 — see [What NOT to serve](#what-not-to-serve-from-typo3).
+
+#### Problem: a new topic doesn't work in the app even though the API returns it
+
+This is expected if the `topic_id` is new (not one of the ids the app's exercise generators already support). This endpoint edits metadata for topics the app already knows — see Tutorial 10. Adding a genuinely new, playable topic requires an app-side code release.
+
 ## Security Notes
 
 - Serve the API only via HTTPS
@@ -604,12 +772,13 @@ Check:
 
 ## Production Recommendations
 
-- use `/api/piplio/v1/words`
+- use the versioned endpoints: `/api/piplio/v1/words`, `/api/piplio/v1/topics`, `/api/piplio/v1/badges`
 - keep the API key configured in TYPO3 backend
 - enable server-side HTTPS redirect
 - add rate limiting per IP or token
 - monitor TYPO3 logs for invalid rows
 - avoid using destructive seeding on production unless intentional
+- store `tx_pipliobackend_package`, `tx_pipliobackend_topic`, and `tx_pipliobackend_graderecommendation` records on the same storage page
 
 ## Updating Data Safely
 
@@ -619,6 +788,9 @@ For production content changes:
 2. Test API output after changes.
 3. Avoid `--force --truncate` unless you want full replacement.
 4. Keep records consistent with the required topic format.
+5. Never rename or delete a `package_id`, `topic_id`, or `badge_id` that has ever gone live — hide it instead (see Tutorial 13).
+6. Only use the fixed `colorKey`/`icon` values — anything else silently falls back in the app instead of erroring.
+7. Remember the "non-empty response only" rule: emptying a table to "reset" the app to defaults does nothing — the app just ignores the empty response and keeps its last-known-good data.
 
 ## Files in This Extension
 
@@ -645,6 +817,6 @@ This extension is designed to let TYPO3 manage structured learning content and e
 For normal use:
 
 - configure the API key
-- maintain data in TYPO3 backend
-- test requests with `topic` and `difficulty`
+- maintain words, packages, topics, grade recommendations, and badges in TYPO3 backend
+- test word requests with `topic` and `difficulty`, and topics/badges requests with no parameters
 - protect the API with HTTPS and rate limiting
