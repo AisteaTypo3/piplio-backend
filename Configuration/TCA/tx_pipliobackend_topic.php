@@ -73,6 +73,7 @@ return [
                     ['label' => 'clock', 'value' => 'clock'],
                     ['label' => 'money', 'value' => 'money'],
                     ['label' => 'write_digits', 'value' => 'write_digits'],
+                    ['label' => 'write_uppercase', 'value' => 'write_uppercase'],
                     ['label' => 'deutsch_artikel', 'value' => 'deutsch_artikel'],
                     ['label' => 'deutsch_reime', 'value' => 'deutsch_reime'],
                     ['label' => 'deutsch_gross_klein', 'value' => 'deutsch_gross_klein'],

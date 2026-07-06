@@ -46,12 +46,12 @@ The API supports these `difficulty` values:
 
 ### Supported `colorKey` values
 
-`tx_pipliobackend_topic.color_key` is a fixed select with exactly these 20 values (they map to hardcoded icon/color themes in the app; an unmatched value still works but renders a generic fallback):
+`tx_pipliobackend_topic.color_key` is a fixed select with exactly these 21 values (they map to hardcoded icon/color themes in the app; an unmatched value still works but renders a generic fallback):
 
 ```
 numbers20, addition20, subtraction20, numbers100, addition100, subtraction100,
 make100, bridge100, times2_5_10, times3_4, division_intro, wall_math, clock, money,
-write_digits, deutsch_artikel, deutsch_reime, deutsch_gross_klein, deutsch_wortarten, deutsch_plural
+write_digits, write_uppercase, deutsch_artikel, deutsch_reime, deutsch_gross_klein, deutsch_wortarten, deutsch_plural
 ```
 
 ### Supported badge `icon` values
@@ -200,7 +200,7 @@ Topic fields (`tx_pipliobackend_topic`):
 - `topic_id` — immutable join key, referenced by the app's locally stored `topicProgress` and topic-mastery badges
 - `title`
 - `subtitle`
-- `color_key` — fixed select, one of the 20 values listed under [Supported `colorKey` values](#supported-colorkey-values)
+- `color_key` — fixed select, one of the 21 values listed under [Supported `colorKey` values](#supported-colorkey-values)
 - `sort_order` — ascending; gaps are fine
 - `package` — relation to a `tx_pipliobackend_package` record on the same page
 - `hidden`
@@ -449,7 +449,7 @@ Response:
 Important:
 
 - `package.id` and `topic.id` are **immutable join keys** referenced by locally stored app progress. Never rename them once live.
-- `topic.colorKey` must be one of the 20 fixed values in the TCA select field. An unknown value is not rejected by the API, but the app falls back to a generic color/icon for it.
+- `topic.colorKey` must be one of the 21 fixed values in the TCA select field. An unknown value is not rejected by the API, but the app falls back to a generic color/icon for it.
 - Adding a brand-new `topic.id` describes metadata for a topic the app doesn't know yet — the app cannot generate exercises for it without an app-side release. This endpoint edits existing topics, it does not create new playable ones.
 - `gradeRecommendations` is independent of each package's `recommendedGrade` — a package can be recommended for one grade label but auto-enabled under several grades.
 - Store `tx_pipliobackend_package`, `tx_pipliobackend_topic` and `tx_pipliobackend_graderecommendation` records on the **same storage page**. The `package` relation field in the topic and grade-recommendation records only lists packages on that same page.
@@ -629,7 +629,7 @@ from these values.
 2. Set:
    - `Topic ID` — **only use an id the app already knows** (see [Supported `colorKey` values](#supported-colorkey-values) for the full current list of ids/keys). Inventing a brand-new topic id here does **not** create a playable topic — the app has no exercise generator bound to it and the topic would fail to load. Use this table to edit metadata (title, subtitle, order, package assignment, visibility) of existing topics, not to add new ones.
    - `Title` / `Subtitle` = free text
-   - `Color Key` = pick from the fixed 20-value select (defaults to matching the topic id)
+   - `Color Key` = pick from the fixed 21-value select (defaults to matching the topic id)
    - `Sort Order` = an integer; topics are sorted ascending, gaps are fine
    - `Package` = select an existing `Piplio Package` record **on the same storage page**
 3. Save and make sure the record is not hidden.
