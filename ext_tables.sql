@@ -60,6 +60,7 @@ CREATE TABLE tx_pipliobackend_package (
     title varchar(255) NOT NULL DEFAULT '',
     description text,
     recommended_grade varchar(1) NOT NULL DEFAULT '1',
+    enabled_grades varchar(20) NOT NULL DEFAULT '1',
     PRIMARY KEY (uid),
     UNIQUE KEY package_id (package_id)
 );
@@ -79,21 +80,6 @@ CREATE TABLE tx_pipliobackend_topic (
     package int(11) NOT NULL DEFAULT 0,
     PRIMARY KEY (uid),
     UNIQUE KEY topic_id (topic_id),
-    KEY package (package)
-);
-
-CREATE TABLE tx_pipliobackend_graderecommendation (
-    uid int(11) NOT NULL auto_increment,
-    pid int(11) NOT NULL DEFAULT 0,
-    tstamp int(11) NOT NULL DEFAULT 0,
-    crdate int(11) NOT NULL DEFAULT 0,
-    deleted tinyint(4) NOT NULL DEFAULT 0,
-    hidden tinyint(4) NOT NULL DEFAULT 0,
-    sorting int(11) NOT NULL DEFAULT 0,
-    grade varchar(1) NOT NULL DEFAULT '1',
-    package int(11) NOT NULL DEFAULT 0,
-    PRIMARY KEY (uid),
-    KEY grade (grade),
     KEY package (package)
 );
 

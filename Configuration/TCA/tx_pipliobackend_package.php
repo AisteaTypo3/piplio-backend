@@ -67,11 +67,26 @@ return [
                 'required' => true,
             ],
         ],
+
+        'enabled_grades' => [
+            'label'  => 'LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:tca.package.enabledGrades',
+            'config' => [
+                'type'       => 'select',
+                'renderType' => 'selectCheckBox',
+                'items'      => [
+                    ['label' => '1', 'value' => '1'],
+                    ['label' => '2', 'value' => '2'],
+                    ['label' => '3', 'value' => '3'],
+                ],
+                'default'  => '1',
+                'minitems' => 1,
+            ],
+        ],
     ],
 
     'types' => [
         '0' => [
-            'showitem' => 'hidden, package_id, title, description, recommended_grade',
+            'showitem' => 'hidden, package_id, title, description, recommended_grade, enabled_grades',
         ],
     ],
 ];

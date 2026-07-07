@@ -30,7 +30,6 @@ class SeedTopicsCommand extends Command
     {
         $packageConnection = $this->connectionPool->getConnectionForTable('tx_pipliobackend_package');
         $topicConnection = $this->connectionPool->getConnectionForTable('tx_pipliobackend_topic');
-        $gradeRecConnection = $this->connectionPool->getConnectionForTable('tx_pipliobackend_graderecommendation');
 
         $pid = (int)$input->getOption('pid');
         $force = (bool)$input->getOption('force');
@@ -52,7 +51,6 @@ class SeedTopicsCommand extends Command
                 $output->writeln('<error>Refusing to replace existing data without --truncate. Use --force --truncate for destructive reseeding.</error>');
                 return Command::INVALID;
             }
-            $gradeRecConnection->truncate('tx_pipliobackend_graderecommendation');
             $topicConnection->truncate('tx_pipliobackend_topic');
             $packageConnection->truncate('tx_pipliobackend_package');
             $output->writeln('<comment>Tables truncated.</comment>');
@@ -62,12 +60,13 @@ class SeedTopicsCommand extends Command
         $base = ['pid' => $pid, 'hidden' => 0, 'deleted' => 0, 'crdate' => $now, 'tstamp' => $now];
 
         $packageUidByPackageId = [];
-        foreach ($this->packages() as [$packageId, $title, $description, $recommendedGrade]) {
+        foreach ($this->packages() as [$packageId, $title, $description, $recommendedGrade, $enabledGrades]) {
             $packageConnection->insert('tx_pipliobackend_package', array_merge($base, [
                 'package_id' => $packageId,
                 'title' => $title,
                 'description' => $description,
                 'recommended_grade' => $recommendedGrade,
+                'enabled_grades' => $enabledGrades,
             ]));
             $packageUidByPackageId[$packageId] = (int)$packageConnection->lastInsertId();
         }
@@ -85,23 +84,10 @@ class SeedTopicsCommand extends Command
             $topicCount++;
         }
 
-        $gradeRecCount = 0;
-        foreach ($this->gradeRecommendations() as $grade => $packageIds) {
-            foreach ($packageIds as $sorting => $packageId) {
-                $gradeRecConnection->insert('tx_pipliobackend_graderecommendation', array_merge($base, [
-                    'grade' => $grade,
-                    'package' => $packageUidByPackageId[$packageId],
-                    'sorting' => $sorting,
-                ]));
-                $gradeRecCount++;
-            }
-        }
-
         $output->writeln(sprintf(
-            '<info>✓ Seeded %d packages, %d topics and %d grade recommendations successfully.</info>',
+            '<info>✓ Seeded %d packages and %d topics successfully.</info>',
             count($packageUidByPackageId),
-            $topicCount,
-            $gradeRecCount
+            $topicCount
         ));
 
         return Command::SUCCESS;
@@ -110,14 +96,14 @@ class SeedTopicsCommand extends Command
     private function packages(): array
     {
         return [
-            ['grade1_numbers20', 'Zahlenraum bis 20', 'Zaehlen, ordnen und Zahlen sicher erkennen.', '1'],
-            ['grade1_arithmetic20', 'Rechnen bis 20', 'Plus und Minus im kleinen Zahlenraum.', '1'],
-            ['grade1_numbers100', 'Zahlenraum bis 100', 'Zehner, Einer und erste groessere Zahlen.', '1'],
-            ['grade2_arithmetic100', 'Rechnen bis 100', 'Vorbereitung fuer Plus und Minus im groesseren Zahlenraum.', '2'],
-            ['grade3_multiplication_intro', 'Malnehmen Start', 'Einmaleins starten und erste Umkehraufgaben verstehen.', '3'],
-            ['alltag_1', 'Alltagsmathe', 'Uhrzeit lesen und mit Geld rechnen.', '1'],
-            ['deutsch_1', 'Deutsch Klasse 1', 'Artikel, Reime und richtig schreiben.', '1'],
-            ['deutsch_23', 'Deutsch Klasse 2-3', 'Wortarten und Mehrzahl üben.', '2'],
+            ['grade1_numbers20', 'Zahlenraum bis 20', 'Zaehlen, ordnen und Zahlen sicher erkennen.', '1', '1'],
+            ['grade1_arithmetic20', 'Rechnen bis 20', 'Plus und Minus im kleinen Zahlenraum.', '1', '1'],
+            ['grade1_numbers100', 'Zahlenraum bis 100', 'Zehner, Einer und erste groessere Zahlen.', '1', '1'],
+            ['grade2_arithmetic100', 'Rechnen bis 100', 'Vorbereitung fuer Plus und Minus im groesseren Zahlenraum.', '2', '2'],
+            ['grade3_multiplication_intro', 'Malnehmen Start', 'Einmaleins starten und erste Umkehraufgaben verstehen.', '3', '3'],
+            ['alltag_1', 'Alltagsmathe', 'Uhrzeit lesen und mit Geld rechnen.', '1', '1,2'],
+            ['deutsch_1', 'Deutsch Klasse 1', 'Artikel, Reime und richtig schreiben.', '1', '1,2'],
+            ['deutsch_23', 'Deutsch Klasse 2-3', 'Wortarten und Mehrzahl üben.', '2', '2,3'],
         ];
     }
 
@@ -143,15 +129,6 @@ class SeedTopicsCommand extends Command
             ['deutsch_gross_klein', 'Groß & Klein', 'Richtig schreiben', 'deutsch_gross_klein', 22, 'deutsch_1'],
             ['deutsch_wortarten', 'Wortarten', 'Nomen, Verb, Adjektiv', 'deutsch_wortarten', 23, 'deutsch_23'],
             ['deutsch_plural', 'Mehrzahl', 'Singular & Plural', 'deutsch_plural', 24, 'deutsch_23'],
-        ];
-    }
-
-    private function gradeRecommendations(): array
-    {
-        return [
-            '1' => ['grade1_numbers20', 'grade1_arithmetic20', 'grade1_numbers100', 'alltag_1', 'deutsch_1'],
-            '2' => ['grade2_arithmetic100', 'alltag_1', 'deutsch_1', 'deutsch_23'],
-            '3' => ['grade3_multiplication_intro', 'deutsch_23'],
         ];
     }
 }

@@ -162,7 +162,7 @@ The module shows:
 
 Use this module to inspect the current dataset quickly.
 
-Note: this custom module currently only covers `tx_pipliobackend_word` and `tx_pipliobackend_interest`. Packages, topics, grade recommendations and badges have no dedicated module yet — manage them via TYPO3's standard **Web > List** module (see the tutorials below).
+Note: this custom module currently only covers `tx_pipliobackend_word` and `tx_pipliobackend_interest`. Packages, topics and badges have no dedicated module yet — manage them via TYPO3's standard **Web > List** module (see the tutorials below).
 
 ## Data Model
 
@@ -172,7 +172,6 @@ The extension stores data in:
 - `tx_pipliobackend_interest`
 - `tx_pipliobackend_package`
 - `tx_pipliobackend_topic`
-- `tx_pipliobackend_graderecommendation`
 - `tx_pipliobackend_badge`
 
 Interest fields:
@@ -205,10 +204,11 @@ Word fields (`tx_pipliobackend_word`):
 
 Package fields (`tx_pipliobackend_package`):
 
-- `package_id` — immutable join key, referenced by `topic.package` and `graderecommendation.package`
+- `package_id` — immutable join key, referenced by `topic.package`
 - `title`
 - `description`
-- `recommended_grade` — `1`, `2`, or `3`
+- `recommended_grade` — `1`, `2`, or `3`; the display label shown as "empfohlen für Klasse X". This alone does **not** auto-enable the package for that grade.
+- `enabled_grades` — multi-select checkbox of `1`/`2`/`3`; which grade(s) this package is auto-enabled for when a parent/child picks that grade in the app. A package can be checked for several grades at once (e.g. useful for both grade 1 and grade 2). Stored as a comma-separated list (e.g. `1,2`).
 - `hidden`
 
 Topic fields (`tx_pipliobackend_topic`):
@@ -220,15 +220,6 @@ Topic fields (`tx_pipliobackend_topic`):
 - `sort_order` — ascending; gaps are fine
 - `package` — relation to a `tx_pipliobackend_package` record on the same page
 - `hidden`
-
-Grade recommendation fields (`tx_pipliobackend_graderecommendation`):
-
-- `grade` — `1`, `2`, or `3`
-- `package` — relation to a `tx_pipliobackend_package` record on the same page
-- `sorting` — order within the grade's package list
-- `hidden`
-
-One row = "this package is auto-enabled for this grade". A package can have several rows (one per grade it should be recommended under).
 
 Badge fields (`tx_pipliobackend_badge`):
 
@@ -574,8 +565,8 @@ Important:
 - `package.id` and `topic.id` are **immutable join keys** referenced by locally stored app progress. Never rename them once live.
 - `topic.colorKey` must be one of the 35 fixed values in the TCA select field. An unknown value is not rejected by the API, but the app falls back to a generic color/icon for it.
 - Adding a brand-new `topic.id` describes metadata for a topic the app doesn't know yet — the app cannot generate exercises for it without an app-side release. This endpoint edits existing topics, it does not create new playable ones.
-- `gradeRecommendations` is independent of each package's `recommendedGrade` — a package can be recommended for one grade label but auto-enabled under several grades.
-- Store `tx_pipliobackend_package`, `tx_pipliobackend_topic` and `tx_pipliobackend_graderecommendation` records on the **same storage page**. The `package` relation field in the topic and grade-recommendation records only lists packages on that same page.
+- `gradeRecommendations` is built from each package's `enabledGrades` field and is independent of its `recommendedGrade` — a package can be recommended for one grade label but auto-enabled under several grades.
+- Store `tx_pipliobackend_package` and `tx_pipliobackend_topic` records on the **same storage page**. The `package` relation field in the topic record only lists packages on that same page.
 
 ### 11. Badges catalog (`GET /api/piplio/v1/badges`)
 
@@ -762,12 +753,10 @@ from these values.
 
 `gradeRecommendations` (which packages get auto-enabled when a parent picks a grade) is separate from a package's own `Recommended Grade` label, and a package can be recommended under more than one grade.
 
-1. Create a record of table `Piplio Grade Recommendation` for each `(grade, package)` pair you want.
-2. Set:
-   - `Grade` = `1`, `2`, or `3`
-   - `Package` = the `Piplio Package` record to auto-enable for that grade
-3. Save. Repeat for every grade the package should appear under (e.g. a package usable in both grade 1 and grade 2 needs two records, one per grade).
-4. To remove a package from a grade's recommendations, hide or delete the corresponding row — this does not affect the package's own `Recommended Grade` label or its topics.
+1. Open the `Piplio Package` record.
+2. In `Auto-enable for grades`, tick every grade (`1`, `2`, and/or `3`) the package should be auto-enabled for.
+3. Save. A package usable in both grade 1 and grade 2 just has both boxes checked — no separate record needed.
+4. To remove a package from a grade's recommendations, untick that grade's checkbox — this does not affect the package's own `Recommended Grade` label or its topics.
 
 ### Tutorial 12: Add a new badge
 
@@ -870,8 +859,8 @@ Check:
 
 Check:
 
-- does a `Piplio Grade Recommendation` record exist for that `(grade, package)` pair? A package's own `Recommended Grade` field does **not** by itself add it to `gradeRecommendations` — see Tutorial 11.
-- is the grade-recommendation record (or its linked package) hidden/deleted?
+- is the target grade ticked in that package's `Auto-enable for grades` field? A package's own `Recommended Grade` field does **not** by itself add it to `gradeRecommendations` — see Tutorial 11.
+- is the package hidden/deleted?
 
 #### Problem: a badge is missing or shows a generic fallback icon/color
 
@@ -901,7 +890,7 @@ This is expected if the `topic_id` is new (not one of the ids the app's exercise
 - add rate limiting per IP or token
 - monitor TYPO3 logs for invalid rows
 - avoid using destructive seeding on production unless intentional
-- store `tx_pipliobackend_package`, `tx_pipliobackend_topic`, and `tx_pipliobackend_graderecommendation` records on the same storage page
+- store `tx_pipliobackend_package` and `tx_pipliobackend_topic` records on the same storage page
 
 ## Updating Data Safely
 
@@ -929,7 +918,6 @@ For production content changes:
 - [Configuration/TCA/tx_pipliobackend_word.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_word.php:1)
 - [Configuration/TCA/tx_pipliobackend_package.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_package.php:1)
 - [Configuration/TCA/tx_pipliobackend_topic.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_topic.php:1)
-- [Configuration/TCA/tx_pipliobackend_graderecommendation.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_graderecommendation.php:1)
 - [Configuration/TCA/tx_pipliobackend_badge.php](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Configuration/TCA/tx_pipliobackend_badge.php:1)
 - [Resources/Private/InitialData.sql](/Users/aistea/PhpstormProjects/portfolio-ais/packages/piplio_backend/Resources/Private/InitialData.sql:1)
 

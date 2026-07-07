@@ -122,22 +122,13 @@ class TopicsApiMiddleware implements MiddlewareInterface
     private function fetchGradeRecommendations(): array
     {
         $qb = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_pipliobackend_graderecommendation');
+            ->getQueryBuilderForTable('tx_pipliobackend_package');
 
-        $rows = $qb->select('g.grade', 'p.package_id')
-            ->from('tx_pipliobackend_graderecommendation', 'g')
-            ->join(
-                'g',
-                'tx_pipliobackend_package',
-                'p',
-                (string)$qb->expr()->eq('g.package', $qb->quoteIdentifier('p.uid'))
-            )
-            ->where($qb->expr()->eq('g.hidden', $qb->createNamedParameter(0, Connection::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('g.deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('p.hidden', $qb->createNamedParameter(0, Connection::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('p.deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
-            ->orderBy('g.grade')
-            ->addOrderBy('g.sorting')
+        $rows = $qb->select('package_id', 'enabled_grades')
+            ->from('tx_pipliobackend_package')
+            ->where($qb->expr()->eq('hidden', $qb->createNamedParameter(0, Connection::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
+            ->orderBy('title')
             ->executeQuery()
             ->fetchAllAssociative();
 
@@ -147,12 +138,16 @@ class TopicsApiMiddleware implements MiddlewareInterface
         }
 
         foreach ($rows as $row) {
-            $grade = (string)($row['grade'] ?? '');
             $packageId = trim((string)($row['package_id'] ?? ''));
-            if (!in_array($grade, self::ALLOWED_GRADES, true) || $packageId === '') {
+            if ($packageId === '') {
                 continue;
             }
-            $result[$grade][] = $packageId;
+            $grades = array_filter(array_map('trim', explode(',', (string)($row['enabled_grades'] ?? ''))));
+            foreach ($grades as $grade) {
+                if (in_array($grade, self::ALLOWED_GRADES, true)) {
+                    $result[$grade][] = $packageId;
+                }
+            }
         }
 
         return $result;
