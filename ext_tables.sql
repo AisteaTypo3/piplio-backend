@@ -15,6 +15,12 @@ CREATE TABLE tx_pipliobackend_word (
     rhyme_words varchar(1000) NOT NULL DEFAULT '',
     no_rhyme_words varchar(1000) NOT NULL DEFAULT '',
     wrong_options varchar(1000) NOT NULL DEFAULT '',
+    correct varchar(255) NOT NULL DEFAULT '',
+    full_sentence varchar(500) NOT NULL DEFAULT '',
+    tense_when varchar(20) NOT NULL DEFAULT '',
+    tense_form varchar(20) NOT NULL DEFAULT '',
+    syllables int(11) NOT NULL DEFAULT 0,
+    punctuation_mark varchar(2) NOT NULL DEFAULT '',
     PRIMARY KEY (uid),
     KEY topic_difficulty (topic, difficulty),
     UNIQUE KEY topic_difficulty_word (topic, difficulty, word(191))

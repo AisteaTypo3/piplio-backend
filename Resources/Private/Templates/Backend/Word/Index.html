@@ -4,6 +4,7 @@
 
 <f:variable name="deleteConfirmText" value="{f:translate(key: 'backend.table.deleteConfirm', extensionName: 'PiplioBackend')}" />
 <f:variable name="searchPlaceholder" value="{f:translate(key: 'backend.filter.searchPlaceholder', extensionName: 'PiplioBackend')}" />
+<f:variable name="importErrorCount" value="{importResult.errors -> f:count()}" />
 
 <f:flashMessages />
 
@@ -214,6 +215,119 @@
             </div>
         </div>
     </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong><f:translate key="backend.import.title" extensionName="PiplioBackend" /></strong>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3"><f:translate key="backend.import.description" extensionName="PiplioBackend" /></p>
+            <f:form action="importWords" method="post" class="row g-3 align-items-end" additionalAttributes="{enctype: 'multipart/form-data'}">
+                <f:form.hidden name="topic" value="{filters.topic}" />
+                <f:form.hidden name="difficulty" value="{filters.difficulty}" />
+                <f:form.hidden name="q" value="{filters.q}" />
+                <div class="col-lg-4">
+                    <label class="form-label" for="piplio-import-file"><f:translate key="backend.import.file" extensionName="PiplioBackend" /></label>
+                    <input id="piplio-import-file" class="form-control" type="file" name="importFile" accept=".csv,.xlsx,.xls,.ods" required="required" />
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label" for="piplio-import-mode"><f:translate key="backend.import.mode" extensionName="PiplioBackend" /></label>
+                    <select id="piplio-import-mode" class="form-select" name="mode">
+                        <f:for each="{importModes}" as="mode">
+                            <f:if condition="{mode.selected}">
+                                <f:then>
+                                    <option value="{mode.value}" selected="selected">{mode.label}</option>
+                                </f:then>
+                                <f:else>
+                                    <option value="{mode.value}">{mode.label}</option>
+                                </f:else>
+                            </f:if>
+                        </f:for>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label" for="piplio-import-pid"><f:translate key="backend.import.pid" extensionName="PiplioBackend" /></label>
+                    <input id="piplio-import-pid" class="form-control" type="number" min="0" step="1" name="importPid" value="{importForm.pid}" />
+                </div>
+                <div class="col-lg-3">
+                    <div class="form-check mb-2">
+                        <f:if condition="{importForm.dryRun}">
+                            <f:then>
+                                <input id="piplio-import-dry-run" class="form-check-input" type="checkbox" name="dryRun" value="1" checked="checked" />
+                            </f:then>
+                            <f:else>
+                                <input id="piplio-import-dry-run" class="form-check-input" type="checkbox" name="dryRun" value="1" />
+                            </f:else>
+                        </f:if>
+                        <label class="form-check-label" for="piplio-import-dry-run"><f:translate key="backend.import.dryRun" extensionName="PiplioBackend" /></label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><f:translate key="backend.import.submit" extensionName="PiplioBackend" /></button>
+                </div>
+            </f:form>
+            <div class="small text-muted mt-3">
+                <strong><f:translate key="backend.import.columns" extensionName="PiplioBackend" />:</strong>
+                <f:for each="{importColumns}" as="column" iteration="columnIterator">{column}<f:if condition="{columnIterator.isLast}"><f:else>, </f:else></f:if></f:for>
+            </div>
+        </div>
+    </div>
+
+    <f:if condition="{importResult}">
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong><f:translate key="backend.import.result.title" extensionName="PiplioBackend" /></strong>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.totalRows" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0">{importResult.totalRows}</div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.validRows" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0">{importResult.validRows}</div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.inserted" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0 text-success">{importResult.inserted}</div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.updated" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0 text-primary">{importResult.updated}</div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.skipped" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0 text-warning">{importResult.skipped}</div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="small text-muted"><f:translate key="backend.import.result.deleted" extensionName="PiplioBackend" /></div>
+                        <div class="h5 mb-0">{importResult.deletedForReplace}</div>
+                    </div>
+                </div>
+                <div class="small text-muted mb-2">
+                    <f:translate key="backend.import.result.mode" extensionName="PiplioBackend" />: {importResult.modeLabel}
+                    <f:if condition="{importResult.dryRun}">
+                        <span class="badge badge-warning ms-2"><f:translate key="backend.import.result.dryRun" extensionName="PiplioBackend" /></span>
+                    </f:if>
+                </div>
+                <f:if condition="{importResult.topics -> f:count()} > 0">
+                    <div class="small text-muted mb-3">
+                        <f:translate key="backend.import.result.topics" extensionName="PiplioBackend" />:
+                        <f:for each="{importResult.topics}" as="topic" iteration="topicIterator">{topic}<f:if condition="{topicIterator.isLast}"><f:else>, </f:else></f:if></f:for>
+                    </div>
+                </f:if>
+                <f:if condition="{importResult.errors -> f:count()} > 0">
+                    <div class="alert alert-warning mb-0">
+                        <div class="fw-bold mb-2"><f:translate key="backend.import.result.errors" extensionName="PiplioBackend" arguments="{0: importErrorCount}" /></div>
+                        <ul class="mb-0 ps-3">
+                            <f:for each="{importResult.errors}" as="error">
+                                <li># {error.row}: {error.message}</li>
+                            </f:for>
+                        </ul>
+                    </div>
+                </f:if>
+            </div>
+        </div>
+    </f:if>
 
     <div class="card mb-4">
         <div class="card-header">

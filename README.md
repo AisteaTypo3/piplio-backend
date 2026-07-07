@@ -37,12 +37,19 @@ The API supports these `topic` values:
 - `deutsch_gross_klein`
 - `deutsch_wortarten`
 - `deutsch_plural`
+- `deutsch_rechtschreibung`
+- `deutsch_zeitformen`
+- `deutsch_silben`
+- `deutsch_satzzeichen`
 
 The API supports these `difficulty` values:
 
 - `easy`
 - `medium`
 - `hard`
+- `all` — used only by `deutsch_zeitformen`, which is a single pool rather than three difficulty-split pools
+
+Note: for `deutsch_satzzeichen`, only `easy` and `medium` records exist in practice (the app derives its own "hard" pool client-side by combining both) — nothing stops you from also adding `hard` records if you want to serve it directly.
 
 ### Supported `colorKey` values
 
@@ -180,14 +187,20 @@ Word fields (`tx_pipliobackend_word`):
 
 - `topic`
 - `difficulty`
-- `word`
+- `word` — reused per topic: the word (articles/word types), the singular (plural), the masked cloze text (spelling), the sentence (tenses), the word to count (syllables), or the sentence without its end mark (punctuation)
 - `artikel`
 - `word_type`
 - `is_nomen`
 - `plural_form`
 - `rhyme_words`
 - `no_rhyme_words`
-- `wrong_options`
+- `wrong_options` — also reused for spelling's wrong answer list
+- `correct` — spelling's correct fill-in word
+- `full_sentence` — spelling's full corrected sentence
+- `tense_when` — tenses' `Gegenwart`/`Vergangenheit`/`Zukunft`
+- `tense_form` — tenses' optional `Präsens`/`Präteritum`/`Perfekt`
+- `syllables` — syllable count
+- `punctuation_mark` — `.`/`?`/`!`
 - `hidden`
 
 Package fields (`tx_pipliobackend_package`):
@@ -427,7 +440,114 @@ Response:
 }
 ```
 
-### 6. Topics catalog (`GET /api/piplio/v1/topics`)
+### 6. Spelling (Rechtschreibung)
+
+Request:
+
+```http
+GET /api/piplio/v1/words?topic=deutsch_rechtschreibung&difficulty=easy
+```
+
+Response:
+
+```json
+{
+  "topic": "deutsch_rechtschreibung",
+  "difficulty": "easy",
+  "count": 1,
+  "words": [
+    {
+      "masked": "Fu__ball",
+      "correct": "ß",
+      "wrong": ["Fussball", "Fuhsball"],
+      "full": "Fußball"
+    }
+  ]
+}
+```
+
+`masked` must contain `__`; `correct`, `wrong`, and `full` are all required. Ideally `masked.replace('__', correct) === full`.
+
+### 7. Tenses (Zeitformen)
+
+Request:
+
+```http
+GET /api/piplio/v1/words?topic=deutsch_zeitformen&difficulty=all
+```
+
+Response:
+
+```json
+{
+  "topic": "deutsch_zeitformen",
+  "difficulty": "all",
+  "count": 1,
+  "words": [
+    {
+      "sentence": "Ich spiele im Garten.",
+      "when": "Gegenwart",
+      "form": "Präsens"
+    }
+  ]
+}
+```
+
+This topic uses `difficulty=all` — a single pool, not three difficulty-split pools. `when` is required (`Gegenwart`/`Vergangenheit`/`Zukunft`); `form` is optional (`Präsens`/`Präteritum`/`Perfekt`) and is omitted from the response entirely if left empty in TYPO3.
+
+### 8. Syllables (Silben)
+
+Request:
+
+```http
+GET /api/piplio/v1/words?topic=deutsch_silben&difficulty=easy
+```
+
+Response:
+
+```json
+{
+  "topic": "deutsch_silben",
+  "difficulty": "easy",
+  "count": 1,
+  "words": [
+    {
+      "word": "Sonnenblume",
+      "syllables": 3
+    }
+  ]
+}
+```
+
+`syllables` must be an integer `>= 1`.
+
+### 9. Punctuation (Satzzeichen)
+
+Request:
+
+```http
+GET /api/piplio/v1/words?topic=deutsch_satzzeichen&difficulty=easy
+```
+
+Response:
+
+```json
+{
+  "topic": "deutsch_satzzeichen",
+  "difficulty": "easy",
+  "count": 1,
+  "words": [
+    {
+      "text": "Kommst du mit",
+      "mark": "?"
+    }
+  ]
+}
+```
+
+`mark` must be one of `.`, `?`, `!`; `text` should be the sentence **without** its end punctuation. Only `easy`/`medium` records typically exist — the app builds its own "hard" pool by combining both.
+
+### 10. Topics catalog (`GET /api/piplio/v1/topics`)
 
 No query parameters. Returns the full package/topic catalog plus grade recommendations in one payload. A record is only included if it (and, for topics, its related package) is not `hidden`/`deleted`. Since the app only overwrites its built-in defaults when the response is non-empty, do not remove all records to "clear" content — hide/delete the ones you don't want served instead.
 
@@ -457,7 +577,7 @@ Important:
 - `gradeRecommendations` is independent of each package's `recommendedGrade` — a package can be recommended for one grade label but auto-enabled under several grades.
 - Store `tx_pipliobackend_package`, `tx_pipliobackend_topic` and `tx_pipliobackend_graderecommendation` records on the **same storage page**. The `package` relation field in the topic and grade-recommendation records only lists packages on that same page.
 
-### 7. Badges catalog (`GET /api/piplio/v1/badges`)
+### 11. Badges catalog (`GET /api/piplio/v1/badges`)
 
 No query parameters. Returns only the threshold-based badges (`milestone` and `streak` categories) — topic-mastery badges, `all_rounder`, `perfect_rounds`, and voucher badges are generated/awarded entirely in the app and are intentionally not served here.
 

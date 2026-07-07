@@ -267,6 +267,127 @@ class SeedWordsCommand extends Command
             $add('deutsch_plural', 'hard', ['word' => $s, 'plural_form' => $p, 'wrong_options' => $w]);
         }
 
+        // ── RECHTSCHREIBUNG EASY ──────────────────────────────────────────────
+        foreach ([
+            ['Sp__l', 'ie', 'i,ieh', 'Spiel'],
+            ['f__l', 'ie', 'i,ieh', 'fiel'],
+            ['Fu__ball', 'ß', 'ss,s', 'Fußball'],
+            ['Stra__e', 'ß', 'ss,s', 'Straße'],
+            ['Ba__', 'll', 'l,lh', 'Ball'],
+            ['Ma__e', 'pp', 'p,b', 'Mappe'],
+            ['Ke__e', 'tt', 't,d', 'Kette'],
+            ['So__e', 'nn', 'n,m', 'Sonne'],
+            ['V__gel', 'o', 'a,u', 'Vogel'],
+            ['__ater', 'V', 'F,W', 'Vater'],
+        ] as [$masked, $correct, $wrong, $full]) {
+            $add('deutsch_rechtschreibung', 'easy', ['word' => $masked, 'correct' => $correct, 'wrong_options' => $wrong, 'full_sentence' => $full]);
+        }
+
+        // ── RECHTSCHREIBUNG MEDIUM ────────────────────────────────────────────
+        foreach ([
+            ['Ba__m', 'u', 'au,o', 'Baum'],
+            ['H__user', 'äu', 'eu,au', 'Häuser'],
+            ['n__', 'eu', 'äu,ei', 'neu'],
+            ['L__fer', 'äu', 'eu,ei', 'Läufer'],
+            ['Sch__le', 'u', 'ul,uh', 'Schule'],
+            ['K__che', 'ü', 'u,ue', 'Küche'],
+            ['Fr__hling', 'ü', 'u,ue', 'Frühling'],
+            ['gr__n', 'ü', 'u,uh', 'grün'],
+            ['sch__n', 'ö', 'o,oe', 'schön'],
+            ['K__nig', 'ö', 'o,oe', 'König'],
+        ] as [$masked, $correct, $wrong, $full]) {
+            $add('deutsch_rechtschreibung', 'medium', ['word' => $masked, 'correct' => $correct, 'wrong_options' => $wrong, 'full_sentence' => $full]);
+        }
+
+        // ── RECHTSCHREIBUNG HARD ──────────────────────────────────────────────
+        foreach ([
+            ['Fu__', 'chs', 'x,cks', 'Fuchs'],
+            ['se__s', 'ch', 'k,c', 'sechs'],
+            ['Pla__', 'tz', 'z,ts', 'Platz'],
+            ['Ka__e', 'tz', 'z,ts', 'Katze'],
+            ['W__hnung', 'o', 'oh,ho', 'Wohnung'],
+            ['Ze__ung', 'it', 'eit,ieh', 'Zeitung'],
+            ['gl__ch', 'ei', 'ie,ai', 'gleich'],
+            ['spr__chen', 'e', 'ä,ee', 'sprechen'],
+            ['K__rper', 'ö', 'o,oe', 'Körper'],
+            ['H__nde', 'ä', 'e,ae', 'Hände'],
+        ] as [$masked, $correct, $wrong, $full]) {
+            $add('deutsch_rechtschreibung', 'hard', ['word' => $masked, 'correct' => $correct, 'wrong_options' => $wrong, 'full_sentence' => $full]);
+        }
+
+        // ── ZEITFORMEN (ein Pool, difficulty=all) ─────────────────────────────
+        foreach ([
+            ['Ich spiele im Garten.', 'Gegenwart', 'Präsens'],
+            ['Sie kauft ein Buch.', 'Gegenwart', 'Präsens'],
+            ['Wir gehen zur Schule.', 'Gegenwart', 'Präsens'],
+            ['Er hat ein Eis gegessen.', 'Vergangenheit', 'Perfekt'],
+            ['Ich spielte gestern Fußball.', 'Vergangenheit', 'Präteritum'],
+            ['Wir waren im Zoo.', 'Vergangenheit', 'Präteritum'],
+            ['Sie ist nach Hause gegangen.', 'Vergangenheit', 'Perfekt'],
+            ['Morgen werde ich schwimmen.', 'Zukunft', ''],
+            ['Nächste Woche fahren wir weg.', 'Zukunft', ''],
+            ['Er wird bald ankommen.', 'Zukunft', ''],
+        ] as [$sentence, $when, $form]) {
+            $fields = ['word' => $sentence, 'tense_when' => $when];
+            if ($form !== '') {
+                $fields['tense_form'] = $form;
+            }
+            $add('deutsch_zeitformen', 'all', $fields);
+        }
+
+        // ── SILBEN EASY ────────────────────────────────────────────────────────
+        foreach ([
+            ['Hund', 1], ['Baum', 1], ['Ball', 1], ['Tisch', 1], ['Buch', 1],
+            ['Katze', 2], ['Sonne', 2], ['Blume', 2], ['Vogel', 2], ['Auto', 2],
+        ] as [$w, $syl]) {
+            $add('deutsch_silben', 'easy', ['word' => $w, 'syllables' => $syl]);
+        }
+
+        // ── SILBEN MEDIUM ──────────────────────────────────────────────────────
+        foreach ([
+            ['Fenster', 2], ['Blumen', 2], ['Wasser', 2], ['Fahrrad', 2], ['Kinder', 2], ['Garten', 2], ['Zeitung', 2],
+            ['Banane', 3], ['Elefant', 3], ['Schmetterling', 3],
+        ] as [$w, $syl]) {
+            $add('deutsch_silben', 'medium', ['word' => $w, 'syllables' => $syl]);
+        }
+
+        // ── SILBEN HARD ────────────────────────────────────────────────────────
+        foreach ([
+            ['Regenschirm', 3], ['Apfelbaum', 3], ['Eisenbahn', 3], ['Straßenbahn', 3], ['Feuerwehr', 3],
+            ['Sonnenblume', 4], ['Schokolade', 4], ['Fußballspieler', 4], ['Kindergarten', 4],
+            ['Wassermelone', 5],
+        ] as [$w, $syl]) {
+            $add('deutsch_silben', 'hard', ['word' => $w, 'syllables' => $syl]);
+        }
+
+        // ── SATZZEICHEN EASY ───────────────────────────────────────────────────
+        foreach ([
+            ['Ich gehe nach Hause', '.'],
+            ['Kommst du mit', '?'],
+            ['Pass auf', '!'],
+            ['Die Sonne scheint', '.'],
+            ['Wie heißt du', '?'],
+            ['Lauf schnell', '!'],
+            ['Der Hund bellt', '.'],
+            ['Hast du Hunger', '?'],
+        ] as [$text, $mark]) {
+            $add('deutsch_satzzeichen', 'easy', ['word' => $text, 'punctuation_mark' => $mark]);
+        }
+
+        // ── SATZZEICHEN MEDIUM ─────────────────────────────────────────────────
+        foreach ([
+            ['Ich habe heute viel gelernt', '.'],
+            ['Warum weinst du', '?'],
+            ['Halt sofort an', '!'],
+            ['Wir gehen morgen ins Kino', '.'],
+            ['Wo ist mein Buch', '?'],
+            ['Sei bitte leise', '!'],
+            ['Meine Schwester spielt Klavier', '.'],
+            ['Kannst du mir helfen', '?'],
+        ] as [$text, $mark]) {
+            $add('deutsch_satzzeichen', 'medium', ['word' => $text, 'punctuation_mark' => $mark]);
+        }
+
         return $rows;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Aistea\PiplioBackend\Middleware;
 
+use Aistea\PiplioBackend\Utility\WordTopics;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -19,14 +20,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class ApiMiddleware implements MiddlewareInterface
 {
     private const API_PREFIXES = ['/api/piplio/words', '/api/piplio/v1/words'];
-    private const ALLOWED_TOPICS = [
-        'deutsch_artikel',
-        'deutsch_reime',
-        'deutsch_gross_klein',
-        'deutsch_wortarten',
-        'deutsch_plural',
-    ];
-    private const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'];
+    private const ALLOWED_TOPICS = WordTopics::ALLOWED_TOPICS;
+    private const ALLOWED_DIFFICULTIES = WordTopics::ALLOWED_DIFFICULTIES;
     private const ALLOWED_QUERY_PARAMS = ['topic', 'difficulty'];
     private ?LoggerInterface $logger = null;
 
@@ -106,7 +101,8 @@ class ApiMiddleware implements MiddlewareInterface
 
         $qb->select(
             'word', 'topic', 'difficulty', 'artikel', 'word_type',
-            'is_nomen', 'plural_form', 'rhyme_words', 'no_rhyme_words', 'wrong_options'
+            'is_nomen', 'plural_form', 'rhyme_words', 'no_rhyme_words', 'wrong_options',
+            'correct', 'full_sentence', 'tense_when', 'tense_form', 'syllables', 'punctuation_mark'
         )
             ->from('tx_pipliobackend_word')
             ->where($qb->expr()->eq('hidden', $qb->createNamedParameter(0, Connection::PARAM_INT)))
@@ -161,6 +157,10 @@ class ApiMiddleware implements MiddlewareInterface
             'deutsch_gross_klein' => $this->mapGrossKleinRow($word, $row),
             'deutsch_wortarten' => $this->mapWortartenRow($word, $row),
             'deutsch_plural' => $this->mapPluralRow($word, $row),
+            'deutsch_rechtschreibung' => $this->mapRechtschreibungRow($word, $row),
+            'deutsch_zeitformen' => $this->mapZeitformenRow($word, $row),
+            'deutsch_silben' => $this->mapSilbenRow($word, $row),
+            'deutsch_satzzeichen' => $this->mapSatzzeichenRow($word, $row),
             default => null,
         };
     }
@@ -304,8 +304,8 @@ class ApiMiddleware implements MiddlewareInterface
     private function mapGrossKleinRow(string $word, array $row): ?array
     {
         $isNomen = (bool)($row['is_nomen'] ?? false);
-        $correct = $isNomen ? ucfirst($word) : lcfirst($word);
-        $wrong = $isNomen ? lcfirst($word) : ucfirst($word);
+        $correct = $isNomen ? $this->mbUpperFirst($word) : $this->mbLowerFirst($word);
+        $wrong = $isNomen ? $this->mbLowerFirst($word) : $this->mbUpperFirst($word);
 
         if ($correct === '' || $wrong === '') {
             return null;
@@ -344,5 +344,97 @@ class ApiMiddleware implements MiddlewareInterface
             'plural' => $plural,
             'wrong' => $wrong,
         ];
+    }
+
+    private function mapRechtschreibungRow(string $word, array $row): ?array
+    {
+        // The generic "word" column holds the masked Lückentext for this topic.
+        $masked = $word;
+        if (!str_contains($masked, '__')) {
+            return null;
+        }
+
+        $correct = trim((string)($row['correct'] ?? ''));
+        $wrong = $this->splitList((string)($row['wrong_options'] ?? ''));
+        $full = trim((string)($row['full_sentence'] ?? ''));
+
+        if ($correct === '' || $wrong === [] || $full === '') {
+            return null;
+        }
+
+        return [
+            'masked' => $masked,
+            'correct' => $correct,
+            'wrong' => $wrong,
+            'full' => $full,
+        ];
+    }
+
+    private function mapZeitformenRow(string $word, array $row): ?array
+    {
+        // The generic "word" column holds the full sentence for this topic.
+        $sentence = $word;
+        $when = trim((string)($row['tense_when'] ?? ''));
+        if (!in_array($when, ['Gegenwart', 'Vergangenheit', 'Zukunft'], true)) {
+            return null;
+        }
+
+        $form = trim((string)($row['tense_form'] ?? ''));
+        if ($form !== '' && !in_array($form, ['Präsens', 'Präteritum', 'Perfekt'], true)) {
+            return null;
+        }
+
+        $result = [
+            'sentence' => $sentence,
+            'when' => $when,
+        ];
+        if ($form !== '') {
+            $result['form'] = $form;
+        }
+
+        return $result;
+    }
+
+    private function mapSilbenRow(string $word, array $row): ?array
+    {
+        $syllables = (int)($row['syllables'] ?? 0);
+        if ($syllables < 1) {
+            return null;
+        }
+
+        return [
+            'word' => $word,
+            'syllables' => $syllables,
+        ];
+    }
+
+    private function mapSatzzeichenRow(string $word, array $row): ?array
+    {
+        // The generic "word" column holds the sentence text (without end mark) for this topic.
+        $mark = trim((string)($row['punctuation_mark'] ?? ''));
+        if (!in_array($mark, ['.', '?', '!'], true)) {
+            return null;
+        }
+
+        return [
+            'text' => $word,
+            'mark' => $mark,
+        ];
+    }
+
+    private function mbUpperFirst(string $value): string
+    {
+        $first = mb_substr($value, 0, 1);
+        $rest = mb_substr($value, 1);
+
+        return mb_strtoupper($first) . $rest;
+    }
+
+    private function mbLowerFirst(string $value): string
+    {
+        $first = mb_substr($value, 0, 1);
+        $rest = mb_substr($value, 1);
+
+        return mb_strtolower($first) . $rest;
     }
 }

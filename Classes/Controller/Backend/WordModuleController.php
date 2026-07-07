@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Aistea\PiplioBackend\Controller\Backend;
 
+use Aistea\PiplioBackend\Service\WordImportService;
+use Aistea\PiplioBackend\Utility\WordTopics;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
@@ -16,19 +18,31 @@ use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 final class WordModuleController extends ActionController
 {
+    protected ?WordImportService $wordImportService = null;
+
     private const TOPIC_LABELS = [
         'deutsch_artikel' => 'topic.deutsch_artikel',
         'deutsch_reime' => 'topic.deutsch_reime',
         'deutsch_gross_klein' => 'topic.deutsch_gross_klein',
         'deutsch_wortarten' => 'topic.deutsch_wortarten',
         'deutsch_plural' => 'topic.deutsch_plural',
+        'deutsch_rechtschreibung' => 'topic.deutsch_rechtschreibung',
+        'deutsch_zeitformen' => 'topic.deutsch_zeitformen',
+        'deutsch_silben' => 'topic.deutsch_silben',
+        'deutsch_satzzeichen' => 'topic.deutsch_satzzeichen',
     ];
 
     private const DIFFICULTY_LABELS = [
         'easy' => 'difficulty.easy',
         'medium' => 'difficulty.medium',
         'hard' => 'difficulty.hard',
+        'all' => 'difficulty.all',
     ];
+
+    public function injectWordImportService(WordImportService $wordImportService): void
+    {
+        $this->wordImportService = $wordImportService;
+    }
 
     public function indexAction(string $topic = '', string $difficulty = '', string $q = ''): ResponseInterface
     {
@@ -38,28 +52,85 @@ final class WordModuleController extends ActionController
             'q' => trim($q),
         ];
 
-        $moduleTemplate = $this->getModuleTemplateFactory()->create($this->request);
-        $moduleTemplate->setTitle($this->translate('module.title'));
+        return $this->renderModule($filters);
+    }
 
-        $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
-        $shortcutButton = $buttonBar->makeShortcutButton()
-            ->setRouteIdentifier('piplio_backend')
-            ->setDisplayName($this->translate('module.title'));
-        $buttonBar->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
+    public function importWordsAction(string $topic = '', string $difficulty = '', string $q = ''): ResponseInterface
+    {
+        $filters = [
+            'topic' => trim($topic),
+            'difficulty' => trim($difficulty),
+            'q' => trim($q),
+        ];
 
-        $moduleTemplate->assignMultiple([
-            'filters' => $filters,
-            'stats' => $this->buildStats(),
-            'interestStats' => $this->buildInterestStats(),
-            'topInterestPages' => $this->findTopInterestPages(),
-            'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], $this->translate('backend.filter.allTopics')),
-            'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], $this->translate('backend.filter.allLevels')),
-            'rows' => $this->findWords($filters),
-            'recentInterests' => $this->findRecentInterests(),
-            'apiExamples' => $this->buildApiExamples(),
-        ]);
+        $mode = trim((string)($_POST['mode'] ?? WordImportService::MODE_UPSERT));
+        $pid = max(0, (int)($_POST['importPid'] ?? $this->findDefaultWordPid()));
+        $dryRun = isset($_POST['dryRun']) && (string)$_POST['dryRun'] !== '0';
 
-        return $moduleTemplate->renderResponse('Backend/Word/Index');
+        $importForm = [
+            'mode' => $mode,
+            'pid' => $pid,
+            'dryRun' => $dryRun,
+        ];
+
+        $upload = $_FILES['importFile'] ?? null;
+        if (!is_array($upload) || (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $this->addFlashMessage($this->translate('backend.import.error.noFile'), '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            return $this->renderModule($filters, null, $importForm);
+        }
+
+        $tmpFile = (string)($upload['tmp_name'] ?? '');
+        if ($tmpFile === '' || !is_uploaded_file($tmpFile)) {
+            $this->addFlashMessage($this->translate('backend.import.error.invalidUpload'), '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            return $this->renderModule($filters, null, $importForm);
+        }
+
+        try {
+            $parsed = $this->getWordImportService()->parseFile($tmpFile);
+        } catch (\Throwable $exception) {
+            $this->addFlashMessage(
+                sprintf($this->translate('backend.import.error.parseFailed'), $exception->getMessage()),
+                '',
+                \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR
+            );
+            return $this->renderModule($filters, null, $importForm);
+        }
+
+        if ($parsed['errors'] !== []) {
+            $importResult = [
+                'mode' => $mode,
+                'modeLabel' => $this->translate('backend.import.mode.' . $mode),
+                'dryRun' => $dryRun,
+                'totalRows' => 0,
+                'validRows' => 0,
+                'inserted' => 0,
+                'updated' => 0,
+                'skipped' => 0,
+                'deletedForReplace' => 0,
+                'topics' => [],
+                'errors' => $parsed['errors'],
+            ];
+            $this->addFlashMessage($this->translate('backend.import.error.validationFailed'), '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            return $this->renderModule($filters, $importResult, $importForm);
+        }
+
+        $importResult = $this->getWordImportService()->import($parsed['rows'], $mode, $pid, $dryRun);
+        $importResult['modeLabel'] = $this->translate('backend.import.mode.' . $mode);
+
+        $severity = $importResult['errors'] === []
+            ? \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::OK
+            : \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING;
+
+        $messageKey = $dryRun ? 'backend.import.flashDryRun' : 'backend.import.flashSuccess';
+        $this->addFlashMessage(sprintf(
+            $this->translate($messageKey),
+            $importResult['inserted'],
+            $importResult['updated'],
+            $importResult['skipped'],
+            count($importResult['errors'])
+        ), '', $severity);
+
+        return $this->renderModule($filters, $importResult, $importForm);
     }
 
     public function exportInterestsAction(): ResponseInterface
@@ -361,11 +432,23 @@ final class WordModuleController extends ActionController
     private function formatRow(array $row): array
     {
         $details = match ((string)$row['topic']) {
-            'deutsch_artikel' => sprintf($this->translate('details.artikel'), $row['artikel'] ?: $this->translate('details.default')),
+            'deutsch_artikel' => sprintf($this->translate('details.artikel'), ($row['artikel'] ?? '') ?: $this->translate('details.default')),
             'deutsch_reime' => sprintf($this->translate('details.reime'), $this->limitList((string)$row['rhyme_words']), $this->limitList((string)$row['no_rhyme_words'])),
             'deutsch_gross_klein' => (bool)$row['is_nomen'] ? $this->translate('details.grossKlein.nomen') : $this->translate('details.grossKlein.other'),
-            'deutsch_wortarten' => sprintf($this->translate('details.wortart'), $row['word_type'] ?: $this->translate('details.default')),
-            'deutsch_plural' => sprintf($this->translate('details.plural'), $row['plural_form'] ?: $this->translate('details.default'), $this->limitList((string)$row['wrong_options'])),
+            'deutsch_wortarten' => sprintf($this->translate('details.wortart'), ($row['word_type'] ?? '') ?: $this->translate('details.default')),
+            'deutsch_plural' => sprintf($this->translate('details.plural'), ($row['plural_form'] ?? '') ?: $this->translate('details.default'), $this->limitList((string)$row['wrong_options'])),
+            'deutsch_rechtschreibung' => sprintf(
+                $this->translate('details.rechtschreibung'),
+                ($row['correct'] ?? '') ?: $this->translate('details.default'),
+                $this->limitList((string)$row['wrong_options'])
+            ),
+            'deutsch_zeitformen' => sprintf(
+                $this->translate('details.zeitformen'),
+                ($row['tense_when'] ?? '') ?: $this->translate('details.default'),
+                ($row['tense_form'] ?? '') ?: $this->translate('details.default')
+            ),
+            'deutsch_silben' => sprintf($this->translate('details.silben'), (string)(($row['syllables'] ?? 0) ?: 0)),
+            'deutsch_satzzeichen' => sprintf($this->translate('details.satzzeichen'), ($row['punctuation_mark'] ?? '') ?: $this->translate('details.default')),
             default => $this->translate('details.default'),
         };
 
@@ -435,6 +518,85 @@ final class WordModuleController extends ActionController
     private function getResponseFactory(): ResponseFactory
     {
         return GeneralUtility::makeInstance(ResponseFactory::class);
+    }
+
+    private function renderModule(array $filters, ?array $importResult = null, ?array $importForm = null): ResponseInterface
+    {
+        $moduleTemplate = $this->getModuleTemplateFactory()->create($this->request);
+        $moduleTemplate->setTitle($this->translate('module.title'));
+
+        $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
+        $shortcutButton = $buttonBar->makeShortcutButton()
+            ->setRouteIdentifier('piplio_backend')
+            ->setDisplayName($this->translate('module.title'));
+        $buttonBar->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
+
+        $moduleTemplate->assignMultiple([
+            'filters' => $filters,
+            'stats' => $this->buildStats(),
+            'interestStats' => $this->buildInterestStats(),
+            'topInterestPages' => $this->findTopInterestPages(),
+            'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], $this->translate('backend.filter.allTopics')),
+            'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], $this->translate('backend.filter.allLevels')),
+            'rows' => $this->findWords($filters),
+            'recentInterests' => $this->findRecentInterests(),
+            'apiExamples' => $this->buildApiExamples(),
+            'importResult' => $importResult,
+            'importModes' => $this->buildImportModes((string)(($importForm ?? [])['mode'] ?? WordImportService::MODE_UPSERT)),
+            'importColumns' => WordTopics::IMPORT_COLUMNS,
+            'importForm' => $importForm ?? [
+                'mode' => WordImportService::MODE_UPSERT,
+                'pid' => $this->findDefaultWordPid(),
+                'dryRun' => true,
+            ],
+        ]);
+
+        return $moduleTemplate->renderResponse('Backend/Word/Index');
+    }
+
+    private function buildImportModes(string $currentMode): array
+    {
+        return [
+            [
+                'value' => WordImportService::MODE_APPEND,
+                'label' => $this->translate('backend.import.mode.append'),
+                'selected' => $currentMode === WordImportService::MODE_APPEND,
+            ],
+            [
+                'value' => WordImportService::MODE_UPSERT,
+                'label' => $this->translate('backend.import.mode.upsert'),
+                'selected' => $currentMode === WordImportService::MODE_UPSERT,
+            ],
+            [
+                'value' => WordImportService::MODE_REPLACE,
+                'label' => $this->translate('backend.import.mode.replace'),
+                'selected' => $currentMode === WordImportService::MODE_REPLACE,
+            ],
+        ];
+    }
+
+    private function findDefaultWordPid(): int
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_pipliobackend_word');
+
+        $pid = $queryBuilder
+            ->select('pid')
+            ->from('tx_pipliobackend_word')
+            ->where(
+                $queryBuilder->expr()->eq('deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT))
+            )
+            ->orderBy('uid', 'ASC')
+            ->setMaxResults(1)
+            ->executeQuery()
+            ->fetchOne();
+
+        return $pid !== false ? (int)$pid : 1;
+    }
+
+    private function getWordImportService(): WordImportService
+    {
+        return $this->wordImportService ??= GeneralUtility::makeInstance(WordImportService::class);
     }
 
     private function translate(string $key): string
