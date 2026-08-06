@@ -2,7 +2,7 @@
       data-namespace-typo3-fluid="true">
 
 <f:variable name="labelClose" value="{f:translate(key: 'frontend.close', extensionName: 'PiplioBackend')}" />
-<f:variable name="labelSubmit" value="{f:translate(key: 'frontend.submit', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelInterestSubmit" value="{f:translate(key: 'frontend.submit', extensionName: 'PiplioBackend')}" />
 <f:variable name="labelSubmitting" value="{f:translate(key: 'frontend.submitting', extensionName: 'PiplioBackend')}" />
 <f:variable name="labelLater" value="{f:translate(key: 'frontend.later', extensionName: 'PiplioBackend')}" />
 <f:variable name="messageInvalid" value="{f:translate(key: 'frontend.ajaxInvalid', extensionName: 'PiplioBackend')}" />
@@ -10,6 +10,13 @@
 <f:variable name="messageSuccess" value="{f:translate(key: 'frontend.ajaxSuccess', extensionName: 'PiplioBackend')}" />
 <f:variable name="placeholderName" value="{f:translate(key: 'frontend.field.namePlaceholder', extensionName: 'PiplioBackend')}" />
 <f:variable name="placeholderEmail" value="{f:translate(key: 'frontend.field.emailPlaceholder', extensionName: 'PiplioBackend')}" />
+<f:variable name="placeholderMessage" value="{f:translate(key: 'frontend.field.messagePlaceholder', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelContactSubmit" value="{f:translate(key: 'frontend.contact.submit', extensionName: 'PiplioBackend')}" />
+<f:variable name="labelSubmit" value="{f:if(condition: isContactMode, then: labelContactSubmit, else: labelInterestSubmit)}" />
+<f:variable name="requestTypeSupport" value="{f:translate(key: 'requestType.support', extensionName: 'PiplioBackend')}" />
+<f:variable name="requestTypeFeedback" value="{f:translate(key: 'requestType.feedback', extensionName: 'PiplioBackend')}" />
+<f:variable name="requestTypeCooperation" value="{f:translate(key: 'requestType.cooperation', extensionName: 'PiplioBackend')}" />
+<f:variable name="requestTypeOther" value="{f:translate(key: 'requestType.other', extensionName: 'PiplioBackend')}" />
 
 <div class="piplio-interest-plugin">
     <f:if condition="{openPanel}">
@@ -20,7 +27,7 @@
             <input type="checkbox" id="{widgetId}-toggle" class="piplio-interest-state" />
         </f:else>
     </f:if>
-    <div id="{widgetId}" class="piplio-interest-widget" data-piplio-widget>
+    <div id="{widgetId}" class="piplio-interest-widget piplio-interest-widget--{mode}" data-piplio-widget>
         <label for="{widgetId}-toggle" class="piplio-interest-backdrop" aria-hidden="true"></label>
         <label for="{widgetId}-toggle" class="piplio-interest-toggle" aria-controls="{widgetId}-panel">
             <span class="piplio-interest-avatar" aria-hidden="true">
@@ -33,12 +40,22 @@
             <div class="piplio-interest-panel-inner">
                 <div class="piplio-interest-panel-top">
                     <div>
-                        <div class="piplio-interest-heading"><f:translate key="frontend.heading" extensionName="PiplioBackend" /></div>
-                        <p class="piplio-interest-text"><f:translate key="frontend.text" extensionName="PiplioBackend" /></p>
+                        <f:if condition="{isContactMode}">
+                            <f:then>
+                                <div class="piplio-interest-heading"><f:translate key="frontend.contact.heading" extensionName="PiplioBackend" /></div>
+                                <p class="piplio-interest-text"><f:translate key="frontend.contact.text" extensionName="PiplioBackend" /></p>
+                            </f:then>
+                            <f:else>
+                                <div class="piplio-interest-heading"><f:translate key="frontend.heading" extensionName="PiplioBackend" /></div>
+                                <p class="piplio-interest-text"><f:translate key="frontend.text" extensionName="PiplioBackend" /></p>
+                            </f:else>
+                        </f:if>
                     </div>
                     <label for="{widgetId}-toggle" class="piplio-interest-close" aria-label="{labelClose}">×</label>
                 </div>
-                <div class="piplio-interest-note"><f:translate key="frontend.note" extensionName="PiplioBackend" /></div>
+                <div class="piplio-interest-note">
+                    <f:if condition="{isContactMode}"><f:then><f:translate key="frontend.contact.note" extensionName="PiplioBackend" /></f:then><f:else><f:translate key="frontend.note" extensionName="PiplioBackend" /></f:else></f:if>
+                </div>
                 <div class="piplio-interest-messages">
                     <f:flashMessages />
                 </div>
@@ -48,6 +65,17 @@
                         <span><f:translate key="frontend.field.name" extensionName="PiplioBackend" /></span>
                         <f:form.textfield name="name" required="required" additionalAttributes="{maxlength: 120, autocomplete: 'name', placeholder: placeholderName}" />
                     </label>
+                    <f:if condition="{isContactMode}">
+                        <label class="piplio-interest-field">
+                            <span><f:translate key="frontend.field.requestType" extensionName="PiplioBackend" /></span>
+                            <f:form.select name="requestType" options="{support: requestTypeSupport, feedback: requestTypeFeedback, cooperation: requestTypeCooperation, other: requestTypeOther}" value="support" />
+                        </label>
+                        <label class="piplio-interest-field">
+                            <span><f:translate key="frontend.field.message" extensionName="PiplioBackend" /></span>
+                            <f:form.textarea name="message" required="required" additionalAttributes="{maxlength: 5000, rows: 5, placeholder: placeholderMessage}" />
+                        </label>
+                    </f:if>
+                    <f:form.hidden name="submissionMode" value="{mode}" />
                     <label class="piplio-interest-field">
                         <span><f:translate key="frontend.field.email" extensionName="PiplioBackend" /></span>
                         <f:form.textfield type="email" name="email" required="required" additionalAttributes="{maxlength: 255, autocomplete: 'email', placeholder: placeholderEmail}" />
@@ -112,9 +140,11 @@
     .piplio-interest-form{display:flex;flex-direction:column;gap:12px}
     .piplio-interest-field{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--piplio-text);text-transform:uppercase}
     .piplio-interest-field input{border:1px solid transparent;border-radius:14px;padding:13px 14px;font:inherit;font-size:14px;text-transform:none;background:var(--piplio-surface-soft);color:var(--piplio-text);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background-color .18s ease}
+    .piplio-interest-field select,.piplio-interest-field textarea{border:1px solid transparent;border-radius:14px;padding:13px 14px;font:inherit;font-size:14px;text-transform:none;background:var(--piplio-surface-soft);color:var(--piplio-text);resize:vertical}
     .piplio-interest-field input::placeholder{color:rgba(134,134,139,.82)}
     .piplio-interest-field input:hover:not(:focus){background:#fbfbfc}
     .piplio-interest-field input:focus{outline:none;border-color:var(--piplio-primary);box-shadow:0 0 0 4px var(--piplio-focus);background:#fbfbfc;transform:translateY(-1px)}
+    .piplio-interest-field select:focus,.piplio-interest-field textarea:focus{outline:none;border-color:var(--piplio-primary);box-shadow:0 0 0 4px var(--piplio-focus);background:#fbfbfc}
     .piplio-interest-consent{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:flex-start;font-size:12px;line-height:1.4;color:var(--piplio-text-muted)}
     .piplio-interest-consent input{margin-top:2px}
     .piplio-interest-honeypot{position:absolute;left:-9999px;opacity:0;pointer-events:none}

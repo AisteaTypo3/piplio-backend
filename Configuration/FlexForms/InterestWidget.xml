@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<T3DataStructure>
+    <sheets>
+        <sDEF>
+            <ROOT>
+                <sheetTitle>Widget</sheetTitle>
+                <type>array</type>
+                <el>
+                    <settings.mode>
+                        <label>LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:plugin.interestWidget.mode</label>
+                        <description>LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:plugin.interestWidget.mode.description</description>
+                        <config>
+                            <type>select</type>
+                            <renderType>selectSingle</renderType>
+                            <items>
+                                <numIndex index="0">
+                                    <numIndex index="0">LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:plugin.interestWidget.mode.contact</numIndex>
+                                    <numIndex index="1">contact</numIndex>
+                                </numIndex>
+                                <numIndex index="1">
+                                    <numIndex index="0">LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:plugin.interestWidget.mode.interest</numIndex>
+                                    <numIndex index="1">interest</numIndex>
+                                </numIndex>
+                            </items>
+                            <default>contact</default>
+                        </config>
+                    </settings.mode>
+                </el>
+            </ROOT>
+        </sDEF>
+    </sheets>
+</T3DataStructure>

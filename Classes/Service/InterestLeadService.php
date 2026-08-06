@@ -8,11 +8,15 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Mail\MailMessage;
+use TYPO3\CMS\Core\Mail\MailerInterface;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 final class InterestLeadService
 {
+    private const CONTACT_RECIPIENT = 'yannick.aister@aistee.de';
     private const MIN_FORM_AGE_SECONDS = 2;
     private const MAX_SUBMISSIONS_PER_IP_PER_HOUR = 5;
     private const MAX_SUBMISSIONS_PER_EMAIL_PER_DAY = 2;
@@ -31,6 +35,9 @@ final class InterestLeadService
         $privacyAccepted = filter_var($input['privacyAccepted'] ?? false, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
         $privacyAccepted = $privacyAccepted ?? in_array((string)($input['privacyAccepted'] ?? ''), ['1', 'on', 'yes', 'true'], true);
         $formTimestamp = (int)($input['formTimestamp'] ?? 0);
+        $submissionMode = ($input['submissionMode'] ?? '') === 'contact' ? 'contact' : 'interest';
+        $requestType = $submissionMode === 'contact' ? $this->normalizeRequestType((string)($input['requestType'] ?? '')) : '';
+        $message = $submissionMode === 'contact' ? $this->limitString((string)($input['message'] ?? ''), 5000) : '';
 
         if ($website !== '' || ($formTimestamp > 0 && (time() - $formTimestamp) < self::MIN_FORM_AGE_SECONDS)) {
             return [
@@ -56,6 +63,14 @@ final class InterestLeadService
             ];
         }
 
+        if ($submissionMode === 'contact' && mb_strlen($message) < 5) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'message' => $this->translate('message.invalidMessage'),
+            ];
+        }
+
         if (!$privacyAccepted) {
             return [
                 'ok' => false,
@@ -73,12 +88,16 @@ final class InterestLeadService
             ];
         }
 
-        $this->storeInterestLead($name, $email, $pageTitle, $pageUrl, $pageId, $remoteAddress, $userAgent, $privacyVersion);
+        $this->storeInterestLead($name, $email, $submissionMode, $requestType, $message, $pageTitle, $pageUrl, $pageId, $remoteAddress, $userAgent, $privacyVersion);
+
+        if ($submissionMode === 'contact') {
+            $this->sendContactNotification($name, $email, $requestType, $message, $pageTitle, $pageUrl);
+        }
 
         return [
             'ok' => true,
             'status' => 200,
-            'message' => $this->translate('message.success'),
+            'message' => $this->translate($submissionMode === 'contact' ? 'message.contactSuccess' : 'message.success'),
         ];
     }
 
@@ -112,6 +131,9 @@ final class InterestLeadService
     private function storeInterestLead(
         string $name,
         string $email,
+        string $submissionMode,
+        string $requestType,
+        string $message,
         string $pageTitle,
         string $pageUrl,
         int $pageId,
@@ -134,6 +156,9 @@ final class InterestLeadService
                     'deleted' => 0,
                     'name' => $name,
                     'email' => $email,
+                    'submission_mode' => $submissionMode,
+                    'request_type' => $requestType,
+                    'message' => $message,
                     'page_title' => $pageTitle,
                     'page_url' => $pageUrl,
                     'source_page_id' => $pageId,
@@ -152,6 +177,46 @@ final class InterestLeadService
                     'consent_timestamp' => Connection::PARAM_INT,
                 ]
             );
+    }
+
+    private function sendContactNotification(string $name, string $email, string $requestType, string $message, string $pageTitle, string $pageUrl): void
+    {
+        try {
+            $mail = GeneralUtility::makeInstance(MailMessage::class);
+            $mail
+                ->setTo(self::CONTACT_RECIPIENT)
+                ->setReplyTo($email, $name)
+                ->setSubject('Piplio Kontaktanfrage: ' . $this->requestTypeLabel($requestType))
+                ->text(implode("\n\n", [
+                    'Neue Kontaktanfrage über das Piplio-Widget',
+                    'Name: ' . $name,
+                    'E-Mail: ' . $email,
+                    'Anliegen: ' . $this->requestTypeLabel($requestType),
+                    'Nachricht:',
+                    $message,
+                    'Quelle: ' . $pageTitle . "\n" . $pageUrl,
+                ]));
+
+            GeneralUtility::makeInstance(MailerInterface::class)->send($mail);
+        } catch (\Throwable $exception) {
+            // The request remains available in TYPO3 even if the mail transport is unavailable.
+            GeneralUtility::makeInstance(LogManager::class)
+                ->getLogger(__CLASS__)
+                ->error('Piplio contact notification could not be sent.', [
+                    'exception' => $exception,
+                    'recipient' => self::CONTACT_RECIPIENT,
+                ]);
+        }
+    }
+
+    private function normalizeRequestType(string $requestType): string
+    {
+        return in_array($requestType, ['support', 'feedback', 'cooperation', 'other'], true) ? $requestType : 'other';
+    }
+
+    private function requestTypeLabel(string $requestType): string
+    {
+        return $this->translate('requestType.' . $requestType);
     }
 
     private function checkRateLimit(string $remoteAddress, string $email): ?string

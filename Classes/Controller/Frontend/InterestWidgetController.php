@@ -24,6 +24,9 @@ final class InterestWidgetController extends ActionController
     public function submitAction(
         string $name = '',
         string $email = '',
+        string $submissionMode = '',
+        string $requestType = '',
+        string $message = '',
         string $pageTitle = '',
         string $pageUrl = '',
         int $pageId = 0,
@@ -37,6 +40,9 @@ final class InterestWidgetController extends ActionController
             [
                 'name' => $name,
                 'email' => $email,
+                'submissionMode' => $submissionMode,
+                'requestType' => $requestType,
+                'message' => $message,
                 'pageTitle' => $pageTitle,
                 'pageUrl' => $pageUrl,
                 'pageId' => $pageId,
@@ -60,6 +66,7 @@ final class InterestWidgetController extends ActionController
     private function renderShowResponse(string $status = ''): ResponseInterface
     {
         $pageId = $this->resolveSourcePageId();
+        $mode = ($this->settings['mode'] ?? 'contact') === 'interest' ? 'interest' : 'contact';
 
         $this->view->assignMultiple([
             'pageId' => $pageId,
@@ -69,6 +76,8 @@ final class InterestWidgetController extends ActionController
             'formTimestamp' => time(),
             'openPanel' => $status !== '',
             'privacyVersion' => $this->interestLeadService->resolvePrivacyVersion(),
+            'mode' => $mode,
+            'isContactMode' => $mode === 'contact',
         ]);
 
         return $this->htmlResponse();

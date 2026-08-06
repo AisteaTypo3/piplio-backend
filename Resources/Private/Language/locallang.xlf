@@ -7,11 +7,19 @@
             <trans-unit id="module.description"><source>Overview of word data and API-related content for the Piplio app.</source></trans-unit>
             <trans-unit id="module.shortDescription"><source>Word data for Piplio</source></trans-unit>
             <trans-unit id="plugin.interestWidget.title"><source>Piplio Interest Widget</source></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode"><source>Widget mode</source></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.description"><source>Choose whether the widget collects pre-launch interest or messages for the available app.</source></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.contact"><source>Questions and contact</source></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.interest"><source>Register interest</source></trans-unit>
             <trans-unit id="settings.apiKey"><source>API key for Piplio app</source></trans-unit>
             <trans-unit id="settings.interestStoragePid"><source>Storage PID for interest leads (0 = use page of frontend plugin)</source></trans-unit>
             <trans-unit id="settings.privacyVersion"><source>Privacy consent version stored with leads</source></trans-unit>
             <trans-unit id="frontend.heading"><source>Pip says hello.</source></trans-unit>
             <trans-unit id="frontend.text"><source>If you are interested, leave your details here.</source></trans-unit>
+            <trans-unit id="frontend.contact.heading"><source>Do you have a question?</source></trans-unit>
+            <trans-unit id="frontend.contact.text"><source>We are happy to help with questions about Piplio.</source></trans-unit>
+            <trans-unit id="frontend.contact.note"><source>Your message goes directly to the Piplio team.</source></trans-unit>
+            <trans-unit id="frontend.contact.submit"><source>Send message</source></trans-unit>
             <trans-unit id="frontend.close"><source>Close</source></trans-unit>
             <trans-unit id="frontend.note"><source>No newsletter flow. Just register interest.</source></trans-unit>
             <trans-unit id="frontend.field.name"><source>Name</source></trans-unit>
@@ -19,6 +27,9 @@
             <trans-unit id="frontend.field.email"><source>Email</source></trans-unit>
             <trans-unit id="frontend.field.emailPlaceholder"><source>jane@example.com</source></trans-unit>
             <trans-unit id="frontend.field.website"><source>Website</source></trans-unit>
+            <trans-unit id="frontend.field.requestType"><source>What is your question about?</source></trans-unit>
+            <trans-unit id="frontend.field.message"><source>Your message</source></trans-unit>
+            <trans-unit id="frontend.field.messagePlaceholder"><source>How can we help?</source></trans-unit>
             <trans-unit id="frontend.privacy"><source>I agree that my details may be stored in TYPO3 for contact purposes.</source></trans-unit>
             <trans-unit id="frontend.submit"><source>Submit</source></trans-unit>
             <trans-unit id="frontend.later"><source>Later</source></trans-unit>
@@ -29,10 +40,16 @@
             <trans-unit id="message.accepted"><source>Thanks, your request has been received.</source></trans-unit>
             <trans-unit id="message.invalidName"><source>Please enter a valid name.</source></trans-unit>
             <trans-unit id="message.invalidEmail"><source>Please enter a valid email address.</source></trans-unit>
+            <trans-unit id="message.invalidMessage"><source>Please enter a message with at least five characters.</source></trans-unit>
             <trans-unit id="message.privacyRequired"><source>Please agree to the processing of your data.</source></trans-unit>
             <trans-unit id="message.tooManyRequests"><source>Too many requests in a short time. Please try again later.</source></trans-unit>
             <trans-unit id="message.duplicateEmail"><source>This email address has already been registered recently.</source></trans-unit>
             <trans-unit id="message.success"><source>Thanks, your email has been saved. We will keep you updated.</source></trans-unit>
+            <trans-unit id="message.contactSuccess"><source>Thank you. Your message has been sent.</source></trans-unit>
+            <trans-unit id="requestType.support"><source>App support</source></trans-unit>
+            <trans-unit id="requestType.feedback"><source>Feedback</source></trans-unit>
+            <trans-unit id="requestType.cooperation"><source>Cooperation</source></trans-unit>
+            <trans-unit id="requestType.other"><source>Other</source></trans-unit>
             <trans-unit id="message.methodNotAllowed"><source>Method not allowed.</source></trans-unit>
             <trans-unit id="backend.header.description"><source>Backend overview of the word data delivered to the Piplio app via API.</source></trans-unit>
             <trans-unit id="backend.apiBase"><source>API base</source></trans-unit>
@@ -139,6 +156,9 @@
             <trans-unit id="tca.interest.hidden"><source>Hidden</source></trans-unit>
             <trans-unit id="tca.interest.name"><source>Name</source></trans-unit>
             <trans-unit id="tca.interest.email"><source>Email</source></trans-unit>
+            <trans-unit id="tca.interest.submissionMode"><source>Type</source></trans-unit>
+            <trans-unit id="tca.interest.requestType"><source>Topic</source></trans-unit>
+            <trans-unit id="tca.interest.message"><source>Message</source></trans-unit>
             <trans-unit id="tca.interest.pageTitle"><source>Page title</source></trans-unit>
             <trans-unit id="tca.interest.pageUrl"><source>Page URL</source></trans-unit>
             <trans-unit id="tca.interest.sourcePageId"><source>Source page PID</source></trans-unit>

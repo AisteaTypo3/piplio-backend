@@ -7,11 +7,19 @@
             <trans-unit id="module.description"><target>Uebersicht der Wortdaten und API-relevanten Inhalte fuer die Piplio App.</target></trans-unit>
             <trans-unit id="module.shortDescription"><target>Wortdaten fuer Piplio</target></trans-unit>
             <trans-unit id="plugin.interestWidget.title"><target>Piplio Interesse Widget</target></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode"><target>Widget-Modus</target></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.description"><target>Wähle, ob das Widget Interesse vor dem Start sammelt oder Fragen zur verfügbaren App entgegennimmt.</target></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.contact"><target>Fragen und Kontakt</target></trans-unit>
+            <trans-unit id="plugin.interestWidget.mode.interest"><target>Interesse vormerken</target></trans-unit>
             <trans-unit id="settings.apiKey"><target>API Key fuer die Piplio App</target></trans-unit>
             <trans-unit id="settings.interestStoragePid"><target>Storage PID fuer Interessenten (0 = Seite des Frontend-Plugins verwenden)</target></trans-unit>
             <trans-unit id="settings.privacyVersion"><target>Gespeicherte Datenschutz-/Consent-Version</target></trans-unit>
             <trans-unit id="frontend.heading"><target>Pip sagt Hallo.</target></trans-unit>
             <trans-unit id="frontend.text"><target>Wenn Sie Interesse haben, tragen Sie sich kurz ein.</target></trans-unit>
+            <trans-unit id="frontend.contact.heading"><target>Hast du eine Frage?</target></trans-unit>
+            <trans-unit id="frontend.contact.text"><target>Wir helfen dir gern bei Fragen rund um Piplio.</target></trans-unit>
+            <trans-unit id="frontend.contact.note"><target>Deine Nachricht geht direkt an das Piplio-Team.</target></trans-unit>
+            <trans-unit id="frontend.contact.submit"><target>Nachricht senden</target></trans-unit>
             <trans-unit id="frontend.close"><target>Schliessen</target></trans-unit>
             <trans-unit id="frontend.note"><target>Kein Newsletter-Flow. Nur Interesse vormerken.</target></trans-unit>
             <trans-unit id="frontend.field.name"><target>Name</target></trans-unit>
@@ -19,6 +27,9 @@
             <trans-unit id="frontend.field.email"><target>E-Mail</target></trans-unit>
             <trans-unit id="frontend.field.emailPlaceholder"><target>max@beispiel.de</target></trans-unit>
             <trans-unit id="frontend.field.website"><target>Website</target></trans-unit>
+            <trans-unit id="frontend.field.requestType"><target>Worum geht es?</target></trans-unit>
+            <trans-unit id="frontend.field.message"><target>Deine Nachricht</target></trans-unit>
+            <trans-unit id="frontend.field.messagePlaceholder"><target>Wie können wir dir helfen?</target></trans-unit>
             <trans-unit id="frontend.privacy"><target>Ich stimme zu, dass meine Angaben zur Kontaktaufnahme in TYPO3 gespeichert werden.</target></trans-unit>
             <trans-unit id="frontend.submit"><target>Eintragen</target></trans-unit>
             <trans-unit id="frontend.later"><target>Spaeter</target></trans-unit>
@@ -29,10 +40,16 @@
             <trans-unit id="message.accepted"><target>Danke, Ihre Anfrage wurde entgegengenommen.</target></trans-unit>
             <trans-unit id="message.invalidName"><target>Bitte geben Sie einen gueltigen Namen ein.</target></trans-unit>
             <trans-unit id="message.invalidEmail"><target>Bitte geben Sie eine gueltige E-Mail-Adresse ein.</target></trans-unit>
+            <trans-unit id="message.invalidMessage"><target>Bitte schreibe eine Nachricht mit mindestens fünf Zeichen.</target></trans-unit>
             <trans-unit id="message.privacyRequired"><target>Bitte stimmen Sie der Verarbeitung Ihrer Daten zu.</target></trans-unit>
             <trans-unit id="message.tooManyRequests"><target>Zu viele Anfragen in kurzer Zeit. Bitte versuchen Sie es spaeter erneut.</target></trans-unit>
             <trans-unit id="message.duplicateEmail"><target>Diese E-Mail-Adresse wurde kuerzlich bereits eingetragen.</target></trans-unit>
             <trans-unit id="message.success"><target>Danke, Ihre E-Mail wurde eingetragen. Wir halten Sie auf dem Laufenden.</target></trans-unit>
+            <trans-unit id="message.contactSuccess"><target>Danke. Deine Nachricht wurde gesendet.</target></trans-unit>
+            <trans-unit id="requestType.support"><target>Hilfe zur App</target></trans-unit>
+            <trans-unit id="requestType.feedback"><target>Feedback</target></trans-unit>
+            <trans-unit id="requestType.cooperation"><target>Kooperation</target></trans-unit>
+            <trans-unit id="requestType.other"><target>Sonstiges</target></trans-unit>
             <trans-unit id="message.methodNotAllowed"><target>Methode nicht erlaubt.</target></trans-unit>
             <trans-unit id="backend.header.description"><target>Backend-Uebersicht fuer die Wortdaten, die spaeter per API an die Piplio App geliefert werden.</target></trans-unit>
             <trans-unit id="backend.apiBase"><target>API-Basis</target></trans-unit>
@@ -139,6 +156,9 @@
             <trans-unit id="tca.interest.hidden"><target>Versteckt</target></trans-unit>
             <trans-unit id="tca.interest.name"><target>Name</target></trans-unit>
             <trans-unit id="tca.interest.email"><target>E-Mail</target></trans-unit>
+            <trans-unit id="tca.interest.submissionMode"><target>Art</target></trans-unit>
+            <trans-unit id="tca.interest.requestType"><target>Anliegen</target></trans-unit>
+            <trans-unit id="tca.interest.message"><target>Nachricht</target></trans-unit>
             <trans-unit id="tca.interest.pageTitle"><target>Seitentitel</target></trans-unit>
             <trans-unit id="tca.interest.pageUrl"><target>Seiten-URL</target></trans-unit>
             <trans-unit id="tca.interest.sourcePageId"><target>Quellseiten-PID</target></trans-unit>
