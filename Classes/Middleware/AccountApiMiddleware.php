@@ -12,6 +12,7 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Mail\MailerInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -64,6 +65,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
                 if ($method === 'PUT') return $this->putProgress($request, $profileId);
             }
         } catch (\Throwable $e) {
+            GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__)->error('Piplio account API failed.', ['exception' => $e]);
             return $this->json(['error' => 'Server error.'], 500);
         }
         return $this->json(['error' => 'Not found.'], 404);
@@ -83,7 +85,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
         $fields = [
             'tstamp' => $now, 'email' => $email,
             'login_code_hash' => password_hash($code, PASSWORD_DEFAULT),
-            'login_code_expires' => $now + 300, 'login_code_attempts' => 0, 'login_code_sent_at' => $now,
+            'login_code_expires' => $now + 300, 'login_code_attempts' => 0,
         ];
         if ($row === null) {
             $connection->insert('tx_pipliobackend_parent', $fields + ['crdate' => $now]);
@@ -100,6 +102,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
             ->text("Dein Piplio-Anmeldecode lautet: {$code}\n\nDer Code ist fünf Minuten gültig. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.")
             ->html($this->loginCodeHtml($code));
         GeneralUtility::makeInstance(MailerInterface::class)->send($mail);
+        $connection->update('tx_pipliobackend_parent', ['login_code_sent_at' => $now], ['email' => $email]);
         return $this->json(['ok' => true, 'retryAfterSeconds' => 60], 202);
     }
 
@@ -231,13 +234,20 @@ final class AccountApiMiddleware implements MiddlewareInterface
 
     private function accountMailFrom(): string
     {
+        $mailSettings = $GLOBALS['TYPO3_CONF_VARS']['MAIL'] ?? [];
+        $smtpUsername = trim((string)($mailSettings['transport_smtp_username'] ?? ''));
+        if (($mailSettings['transport'] ?? '') === 'smtp' && filter_var($smtpUsername, FILTER_VALIDATE_EMAIL)) {
+            return $smtpUsername;
+        }
         try {
             $settings = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('piplio_backend');
             $from = trim((string)($settings['accountMailFrom'] ?? ''));
             if (filter_var($from, FILTER_VALIDATE_EMAIL)) return $from;
         } catch (\Throwable) {
         }
-        return 'info@aistea.me';
+        $defaultFrom = trim((string)($mailSettings['defaultMailFromAddress'] ?? ''));
+        if (filter_var($defaultFrom, FILTER_VALIDATE_EMAIL)) return $defaultFrom;
+        throw new \RuntimeException('No valid sender address is configured for Piplio login emails.');
     }
 
     private function accountMailFromName(): string
