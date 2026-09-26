@@ -10,6 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Log\LogManager;
@@ -263,7 +264,14 @@ final class AccountApiMiddleware implements MiddlewareInterface
     private function ownsProfile(int $parentId, int $profileId): bool { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE); return (bool)$qb->select('uid')->from(self::PROFILE_TABLE)->where($qb->expr()->eq('uid', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne(); }
     private function profilePayload(array $r): array { return ['id' => 'child_' . (int)$r['uid'], 'displayName' => (string)$r['display_name'], 'avatar' => (string)$r['avatar'], 'createdAt' => date(DATE_ATOM, (int)$r['crdate']), 'updatedAt' => date(DATE_ATOM, (int)$r['tstamp']), 'revision' => 0]; }
     private function progressRow(int $profileId): ?array { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_progress'); return $qb->select('*')->from('tx_pipliobackend_progress')->where($qb->expr()->eq('profile', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchAssociative() ?: null; }
-    private function findParentByEmail(string $email): ?array { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent'); return $qb->select('*')->from('tx_pipliobackend_parent')->where($qb->expr()->eq('email', $qb->createNamedParameter($email)))->orderBy('deleted')->setMaxResults(1)->executeQuery()->fetchAssociative() ?: null; }
+    private function findParentByEmail(string $email): ?array
+    {
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
+        $qb->getRestrictions()->removeByType(DeletedRestriction::class);
+        return $qb->select('*')->from('tx_pipliobackend_parent')
+            ->where($qb->expr()->eq('email', $qb->createNamedParameter($email)))
+            ->setMaxResults(1)->executeQuery()->fetchAssociative() ?: null;
+    }
     private function connection(string $table): Connection { return GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable($table); }
     private function body(ServerRequestInterface $request): array { $decoded = json_decode((string)$request->getBody(), true); return is_array($decoded) ? $decoded : []; }
     private function json(array $data, int $status = 200): JsonResponse { return (new JsonResponse($data, $status))->withHeader('Cache-Control', 'no-store, private')->withHeader('Pragma', 'no-cache')->withHeader('Expires', '0')->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key')->withHeader('Access-Control-Max-Age', '86400'); }
