@@ -157,7 +157,21 @@ final class AccountApiMiddleware implements MiddlewareInterface
         return $this->getProgress($profileId);
     }
 
-    private function authenticate(ServerRequestInterface $request): ?int { $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $request->getHeaderLine('Authorization'), $m) ? trim($m[1]) : ''; if ($token === '') return null; $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent'); $row = $qb->select('uid')->from('tx_pipliobackend_parent')->where($qb->expr()->eq('session_token_hash', $qb->createNamedParameter(hash('sha512', $token))), $qb->expr()->gt('session_expires', $qb->createNamedParameter(time(), Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchAssociative(); return $row ? (int)$row['uid'] : null; }
+    private function authenticate(ServerRequestInterface $request): ?int
+    {
+        $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $request->getHeaderLine('Authorization'), $m) ? trim($m[1]) : '';
+        if ($token === '') return null;
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
+        $rows = $qb->select('uid', 'session_token_hash')->from('tx_pipliobackend_parent')
+            ->where($qb->expr()->gt('session_expires', $qb->createNamedParameter(time(), Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
+            ->executeQuery()->fetchAllAssociative();
+        $hash = hash('sha512', $token);
+        foreach ($rows as $row) {
+            $storedHash = trim((string)($row['session_token_hash'] ?? ''));
+            if ($storedHash !== '' && hash_equals($storedHash, $hash)) return (int)$row['uid'];
+        }
+        return null;
+    }
     private function ownsProfile(int $parentId, int $profileId): bool { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE); return (bool)$qb->select('uid')->from(self::PROFILE_TABLE)->where($qb->expr()->eq('uid', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne(); }
     private function profilePayload(array $r): array { return ['id' => 'child_' . (int)$r['uid'], 'displayName' => (string)$r['display_name'], 'avatar' => (string)$r['avatar'], 'createdAt' => date(DATE_ATOM, (int)$r['crdate']), 'updatedAt' => date(DATE_ATOM, (int)$r['tstamp']), 'revision' => 0]; }
     private function progressRow(int $profileId): ?array { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_progress'); return $qb->select('*')->from('tx_pipliobackend_progress')->where($qb->expr()->eq('profile', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchAssociative() ?: null; }
