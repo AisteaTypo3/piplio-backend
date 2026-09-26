@@ -87,7 +87,11 @@ final class AccountApiMiddleware implements MiddlewareInterface
         if ($row === null) $connection->insert('tx_pipliobackend_parent', $fields);
         else $connection->update('tx_pipliobackend_parent', $fields, ['uid' => (int)$row['uid']]);
         $mail = GeneralUtility::makeInstance(MailMessage::class);
-        $mail->setTo($email)->setSubject('Dein Piplio-Anmeldecode')->text("Dein Piplio-Code lautet: {$code}\n\nDer Code ist fünf Minuten gültig.");
+        $mail
+            ->setTo($email)
+            ->setSubject('Dein Piplio-Anmeldecode')
+            ->text("Dein Piplio-Anmeldecode lautet: {$code}\n\nDer Code ist fünf Minuten gültig. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.")
+            ->html($this->loginCodeHtml($code));
         GeneralUtility::makeInstance(MailerInterface::class)->send($mail);
         return $this->json(['ok' => true, 'retryAfterSeconds' => 60], 202);
     }
@@ -202,6 +206,20 @@ final class AccountApiMiddleware implements MiddlewareInterface
     private function encryptionKey(): string
     {
         return (string)($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? 'piplio-account-key');
+    }
+
+    private function loginCodeHtml(string $code): string
+    {
+        $safeCode = htmlspecialchars($code, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return '<!doctype html><html lang="de"><body style="margin:0;background:#f5f3ff;font-family:Arial,sans-serif;color:#202033">'
+            . '<div style="max-width:560px;margin:32px auto;padding:0 18px"><div style="background:#6C47FF;border-radius:22px 22px 0 0;padding:26px 30px;color:#fff">'
+            . '<div style="font-size:28px;font-weight:800;letter-spacing:.5px">Piplio</div><div style="margin-top:5px;opacity:.9;font-size:14px">Lernen mit Freude</div></div>'
+            . '<div style="background:#fff;border-radius:0 0 22px 22px;padding:34px 30px;box-shadow:0 8px 30px rgba(38,25,94,.12)">'
+            . '<h1 style="margin:0 0 12px;font-size:24px;color:#26213f">Dein Anmeldecode</h1>'
+            . '<p style="font-size:16px;line-height:1.6;margin:0 0 24px">Mit diesem Code meldest du dich sicher bei Piplio an:</p>'
+            . '<div style="background:#f0edff;border:2px solid #d9d1ff;border-radius:16px;text-align:center;padding:18px;margin:0 0 24px"><span style="font-size:34px;letter-spacing:8px;font-weight:800;color:#6C47FF">' . $safeCode . '</span></div>'
+            . '<p style="font-size:14px;line-height:1.6;color:#625d75;margin:0">Der Code ist fünf Minuten gültig und kann nur einmal verwendet werden. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>'
+            . '<p style="font-size:13px;color:#938da8;margin:28px 0 0">Dein Piplio-Team</p></div></div></body></html>';
     }
     private function ownsProfile(int $parentId, int $profileId): bool { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE); return (bool)$qb->select('uid')->from(self::PROFILE_TABLE)->where($qb->expr()->eq('uid', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne(); }
     private function profilePayload(array $r): array { return ['id' => 'child_' . (int)$r['uid'], 'displayName' => (string)$r['display_name'], 'avatar' => (string)$r['avatar'], 'createdAt' => date(DATE_ATOM, (int)$r['crdate']), 'updatedAt' => date(DATE_ATOM, (int)$r['tstamp']), 'revision' => 0]; }

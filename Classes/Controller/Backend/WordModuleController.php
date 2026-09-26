@@ -535,6 +535,8 @@ final class WordModuleController extends ActionController
             'filters' => $filters,
             'stats' => $this->buildStats(),
             'interestStats' => $this->buildInterestStats(),
+            'accountStats' => $this->buildAccountStats(),
+            'parentAccounts' => $this->findParentAccounts(),
             'topInterestPages' => $this->findTopInterestPages(),
             'topicOptions' => $this->buildOptions(self::TOPIC_LABELS, $filters['topic'], $this->translate('backend.filter.allTopics')),
             'difficultyOptions' => $this->buildOptions(self::DIFFICULTY_LABELS, $filters['difficulty'], $this->translate('backend.filter.allLevels')),
@@ -552,6 +554,37 @@ final class WordModuleController extends ActionController
         ]);
 
         return $moduleTemplate->renderResponse('Backend/Word/Index');
+    }
+
+    private function buildAccountStats(): array
+    {
+        $parents = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('tx_pipliobackend_parent');
+        $profiles = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('tx_pipliobackend_childprofile');
+        return [
+            'parents' => (int)$parents->count('*', 'tx_pipliobackend_parent', ['deleted' => 0]),
+            'profiles' => (int)$profiles->count('*', 'tx_pipliobackend_childprofile', ['deleted' => 0]),
+        ];
+    }
+
+    private function findParentAccounts(): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
+        $rows = $queryBuilder->select('p.uid', 'p.email', 'p.crdate', 'p.session_expires', 'p.login_code_sent_at')
+            ->addSelectLiteral('COUNT(c.uid) AS child_count')
+            ->from('tx_pipliobackend_parent', 'p')
+            ->leftJoin('p', 'tx_pipliobackend_childprofile', 'c', 'c.parent = p.uid AND c.deleted = 0')
+            ->where($queryBuilder->expr()->eq('p.deleted', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)))
+            ->groupBy('p.uid', 'p.email', 'p.crdate', 'p.session_expires', 'p.login_code_sent_at')
+            ->orderBy('p.crdate', 'DESC')->setMaxResults(100)->executeQuery()->fetchAllAssociative();
+
+        return array_map(static fn(array $row): array => [
+            'uid' => (int)$row['uid'],
+            'email' => (string)$row['email'],
+            'createdAt' => (int)$row['crdate'],
+            'sessionExpires' => (int)$row['session_expires'],
+            'childCount' => (int)$row['child_count'],
+            'codeRequestedAt' => (int)$row['login_code_sent_at'],
+        ], $rows);
     }
 
     private function buildImportModes(string $currentMode): array
