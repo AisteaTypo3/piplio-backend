@@ -84,8 +84,12 @@ final class AccountApiMiddleware implements MiddlewareInterface
             'login_code_hash' => password_hash($code, PASSWORD_DEFAULT),
             'login_code_expires' => $now + 300, 'login_code_attempts' => 0, 'login_code_sent_at' => $now,
         ];
-        if ($row === null) $connection->insert('tx_pipliobackend_parent', $fields);
-        else $connection->update('tx_pipliobackend_parent', $fields, ['uid' => (int)$row['uid']]);
+        if ($row === null) {
+            $connection->insert('tx_pipliobackend_parent', $fields + ['crdate' => $now]);
+        } else {
+            if ((int)($row['crdate'] ?? 0) === 0) $fields['crdate'] = $now;
+            $connection->update('tx_pipliobackend_parent', $fields, ['uid' => (int)$row['uid']]);
+        }
         $mail = GeneralUtility::makeInstance(MailMessage::class);
         $mail
             ->setTo($email)

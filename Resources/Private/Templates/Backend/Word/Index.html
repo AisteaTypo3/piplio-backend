@@ -63,7 +63,7 @@
                 <div class="card-body p-0">
                     <f:if condition="{parentAccounts -> f:count()} > 0">
                         <table class="table table-striped table-hover mb-0"><thead><tr><th>E-Mail</th><th>Kinder</th><th>Registriert</th><th>Status</th></tr></thead><tbody>
-                            <f:for each="{parentAccounts}" as="parent"><tr><td>{parent.email}</td><td>{parent.childCount}</td><td class="text-nowrap"><f:format.date format="d.m.Y H:i">{parent.createdAt}</f:format.date></td><td><f:if condition="{parent.sessionExpires} > 0">Sitzung vorhanden</f:if></td></tr></f:for>
+                            <f:for each="{parentAccounts}" as="parent"><tr><td>{parent.email}</td><td>{parent.childCount}</td><td class="text-nowrap"><f:format.date format="d.m.Y H:i">{parent.createdAt}</f:format.date></td><td><f:if condition="{parent.sessionActive}">Aktiv<f:else>Keine aktive Sitzung</f:else></f:if></td></tr></f:for>
                         </tbody></table>
                     </f:if>
                     <f:if condition="{parentAccounts -> f:count()} == 0"><div class="p-3 text-muted small">Noch keine Elternkonten angemeldet.</div></f:if>

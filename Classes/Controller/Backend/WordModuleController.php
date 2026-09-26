@@ -582,6 +582,7 @@ final class WordModuleController extends ActionController
             'email' => (string)$row['email'],
             'createdAt' => (int)$row['crdate'],
             'sessionExpires' => (int)$row['session_expires'],
+            'sessionActive' => (int)$row['session_expires'] > time(),
             'childCount' => (int)$row['child_count'],
             'codeRequestedAt' => (int)$row['login_code_sent_at'],
         ], $rows);
