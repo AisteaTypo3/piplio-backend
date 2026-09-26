@@ -174,7 +174,15 @@ final class AccountApiMiddleware implements MiddlewareInterface
 
     private function authenticate(ServerRequestInterface $request): ?int
     {
-        $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $request->getHeaderLine('Authorization'), $m) ? trim($m[1]) : '';
+        $token = trim($request->getHeaderLine('X-Piplio-Session'));
+        if ($token === '') {
+            $authorization = $request->getHeaderLine('Authorization');
+            if ($authorization === '') {
+                $serverParams = $request->getServerParams();
+                $authorization = (string)($serverParams['HTTP_AUTHORIZATION'] ?? $serverParams['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+            }
+            $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authorization, $m) ? trim($m[1]) : '';
+        }
         if ($token === '') return null;
         $signedParentId = $this->verifyToken($token);
         if ($signedParentId !== null) return $signedParentId;
@@ -274,5 +282,5 @@ final class AccountApiMiddleware implements MiddlewareInterface
     }
     private function connection(string $table): Connection { return GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable($table); }
     private function body(ServerRequestInterface $request): array { $decoded = json_decode((string)$request->getBody(), true); return is_array($decoded) ? $decoded : []; }
-    private function json(array $data, int $status = 200): JsonResponse { return (new JsonResponse($data, $status))->withHeader('Cache-Control', 'no-store, private')->withHeader('Pragma', 'no-cache')->withHeader('Expires', '0')->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key')->withHeader('Access-Control-Max-Age', '86400'); }
+    private function json(array $data, int $status = 200): JsonResponse { return (new JsonResponse($data, $status))->withHeader('Cache-Control', 'no-store, private')->withHeader('Pragma', 'no-cache')->withHeader('Expires', '0')->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key, X-Piplio-Session')->withHeader('Access-Control-Max-Age', '86400'); }
 }
