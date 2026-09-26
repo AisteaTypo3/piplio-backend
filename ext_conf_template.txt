@@ -10,3 +10,9 @@ interestStoragePid = 0
 
 # cat=interest//a; type=string; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.privacyVersion
 privacyVersion = v1
+
+# cat=account//a; type=string; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.accountMailFrom
+accountMailFrom = info@aistea.me
+
+# cat=account//a; type=string; label=LLL:EXT:piplio_backend/Resources/Private/Language/locallang.xlf:settings.accountMailFromName
+accountMailFromName = Piplio

@@ -10,6 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Mail\MailerInterface;
@@ -93,6 +94,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
         }
         $mail = GeneralUtility::makeInstance(MailMessage::class);
         $mail
+            ->setFrom($this->accountMailFrom(), $this->accountMailFromName())
             ->setTo($email)
             ->setSubject('Dein Piplio-Anmeldecode')
             ->text("Dein Piplio-Anmeldecode lautet: {$code}\n\nDer Code ist fünf Minuten gültig. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.")
@@ -225,6 +227,28 @@ final class AccountApiMiddleware implements MiddlewareInterface
             . '<div style="background:#f0edff;border:2px solid #d9d1ff;border-radius:16px;text-align:center;padding:18px;margin:0 0 24px"><span style="font-size:34px;letter-spacing:8px;font-weight:800;color:#6C47FF">' . $safeCode . '</span></div>'
             . '<p style="font-size:14px;line-height:1.6;color:#625d75;margin:0">Der Code ist fünf Minuten gültig und kann nur einmal verwendet werden. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>'
             . '<p style="font-size:13px;color:#938da8;margin:28px 0 0">Dein Piplio-Team</p></div></div></body></html>';
+    }
+
+    private function accountMailFrom(): string
+    {
+        try {
+            $settings = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('piplio_backend');
+            $from = trim((string)($settings['accountMailFrom'] ?? ''));
+            if (filter_var($from, FILTER_VALIDATE_EMAIL)) return $from;
+        } catch (\Throwable) {
+        }
+        return 'info@aistea.me';
+    }
+
+    private function accountMailFromName(): string
+    {
+        try {
+            $settings = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('piplio_backend');
+            $name = trim((string)($settings['accountMailFromName'] ?? 'Piplio'));
+            return $name !== '' ? $name : 'Piplio';
+        } catch (\Throwable) {
+            return 'Piplio';
+        }
     }
     private function ownsProfile(int $parentId, int $profileId): bool { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE); return (bool)$qb->select('uid')->from(self::PROFILE_TABLE)->where($qb->expr()->eq('uid', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne(); }
     private function profilePayload(array $r): array { return ['id' => 'child_' . (int)$r['uid'], 'displayName' => (string)$r['display_name'], 'avatar' => (string)$r['avatar'], 'createdAt' => date(DATE_ATOM, (int)$r['crdate']), 'updatedAt' => date(DATE_ATOM, (int)$r['tstamp']), 'revision' => 0]; }

@@ -14,6 +14,8 @@
             <trans-unit id="settings.apiKey"><source>API key for Piplio app</source></trans-unit>
             <trans-unit id="settings.interestStoragePid"><source>Storage PID for interest leads (0 = use page of frontend plugin)</source></trans-unit>
             <trans-unit id="settings.privacyVersion"><source>Privacy consent version stored with leads</source></trans-unit>
+            <trans-unit id="settings.accountMailFrom"><source>Sender address for parent login emails</source></trans-unit>
+            <trans-unit id="settings.accountMailFromName"><source>Sender name for parent login emails</source></trans-unit>
             <trans-unit id="frontend.heading"><source>Pip says hello.</source></trans-unit>
             <trans-unit id="frontend.text"><source>If you are interested, leave your details here.</source></trans-unit>
             <trans-unit id="frontend.contact.heading"><source>Do you have a question?</source></trans-unit>
