@@ -131,9 +131,10 @@ After installing the package:
 
 ## Parent accounts and child profiles
 
-The private account API is available at `/api/piplio/auth/*` and
-`/api/piplio/profiles/*`. It stores parent accounts, child profiles and the JSON
-progress snapshot in TYPO3 tables. The complete request/response contract is in
+The private account API is available at `/api/piplio/auth/*`,
+`/api/piplio/profiles/*` and `/api/piplio/account`. It stores parent accounts, child
+profiles and the JSON progress snapshot in TYPO3 tables. `DELETE /api/piplio/account`
+permanently removes the parent account with all child profiles and progress. The complete request/response contract is in
 the mobile project at `docs/typo3-account-api-spec.md`.
 
 After installing the extension, run the TYPO3 database schema migration so the

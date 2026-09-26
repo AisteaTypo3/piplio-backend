@@ -26,7 +26,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $path = $request->getUri()->getPath();
-        if (!str_starts_with($path, self::PREFIX . 'auth/') && !str_starts_with($path, self::PREFIX . 'profiles')) {
+        if (!str_starts_with($path, self::PREFIX . 'auth/') && !str_starts_with($path, self::PREFIX . 'profiles') && $path !== self::PREFIX . 'account') {
             return $handler->handle($request);
         }
         if ($request->getMethod() === 'OPTIONS') {
@@ -44,6 +44,9 @@ final class AccountApiMiddleware implements MiddlewareInterface
             $parentId = $this->authenticate($request);
             if ($parentId === null) {
                 return $this->json(['error' => 'Unauthorized.'], 401);
+            }
+            if ($path === self::PREFIX . 'account' && $method === 'DELETE') {
+                return $this->deleteAccount($parentId);
             }
             if ($path === self::PREFIX . 'profiles' && $method === 'GET') {
                 return $this->listProfiles($parentId);
@@ -159,6 +162,23 @@ final class AccountApiMiddleware implements MiddlewareInterface
             $now = time();
             $connection->update('tx_pipliobackend_progress', ['deleted' => 1, 'tstamp' => $now], ['profile' => $profileId]);
             $connection->update(self::PROFILE_TABLE, ['deleted' => 1, 'tstamp' => $now], ['uid' => $profileId]);
+        });
+        return $this->json(['ok' => true]);
+    }
+
+    private function deleteAccount(int $parentId): JsonResponse
+    {
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE);
+        $qb->getRestrictions()->removeAll();
+        $profileIds = $qb->select('uid')->from(self::PROFILE_TABLE)
+            ->where($qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)))
+            ->executeQuery()->fetchFirstColumn();
+        $this->connection('tx_pipliobackend_parent')->transactional(function (Connection $connection) use ($parentId, $profileIds): void {
+            foreach ($profileIds as $profileId) {
+                $connection->delete('tx_pipliobackend_progress', ['profile' => (int)$profileId]);
+            }
+            $connection->delete(self::PROFILE_TABLE, ['parent' => $parentId]);
+            $connection->delete('tx_pipliobackend_parent', ['uid' => $parentId]);
         });
         return $this->json(['ok' => true]);
     }
