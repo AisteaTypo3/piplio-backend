@@ -103,7 +103,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
             if ($row !== null) $this->connection('tx_pipliobackend_parent')->update('tx_pipliobackend_parent', ['login_code_attempts' => (int)$row['login_code_attempts'] + 1], ['uid' => (int)$row['uid']]);
             return $this->json(['error' => 'Invalid code.'], 401);
         }
-        $token = bin2hex(random_bytes(32));
+        $token = $this->issueToken((int)$row['uid'], $now + 2592000);
         $this->connection('tx_pipliobackend_parent')->update('tx_pipliobackend_parent', [
             'tstamp' => $now, 'session_token_hash' => hash('sha512', $token), 'session_expires' => $now + 2592000,
             'login_code_hash' => '', 'login_code_expires' => 0, 'login_code_attempts' => 0,
@@ -161,6 +161,8 @@ final class AccountApiMiddleware implements MiddlewareInterface
     {
         $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $request->getHeaderLine('Authorization'), $m) ? trim($m[1]) : '';
         if ($token === '') return null;
+        $signedParentId = $this->verifyToken($token);
+        if ($signedParentId !== null) return $signedParentId;
         $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
         $rows = $qb->select('uid', 'session_token_hash')->from('tx_pipliobackend_parent')
             ->where($qb->expr()->gt('session_expires', $qb->createNamedParameter(time(), Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
@@ -171,6 +173,35 @@ final class AccountApiMiddleware implements MiddlewareInterface
             if ($storedHash !== '' && hash_equals($storedHash, $hash)) return (int)$row['uid'];
         }
         return null;
+    }
+
+    private function issueToken(int $parentId, int $expires): string
+    {
+        $payload = rtrim(strtr(base64_encode(json_encode(['parentId' => $parentId, 'expires' => $expires], JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
+        $signature = hash_hmac('sha256', $payload, $this->encryptionKey());
+        return $payload . '.' . $signature;
+    }
+
+    private function verifyToken(string $token): ?int
+    {
+        $parts = explode('.', $token, 2);
+        if (count($parts) !== 2) return null;
+        [$payload, $signature] = $parts;
+        if (!hash_equals(hash_hmac('sha256', $payload, $this->encryptionKey()), $signature)) return null;
+        $decoded = json_decode((string)base64_decode(strtr($payload, '-_', '+/')), true);
+        if (!is_array($decoded) || (int)($decoded['expires'] ?? 0) < time() || (int)($decoded['parentId'] ?? 0) < 1) return null;
+        return $this->parentExists((int)$decoded['parentId']) ? (int)$decoded['parentId'] : null;
+    }
+
+    private function parentExists(int $parentId): bool
+    {
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
+        return (bool)$qb->select('uid')->from('tx_pipliobackend_parent')->where($qb->expr()->eq('uid', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne();
+    }
+
+    private function encryptionKey(): string
+    {
+        return (string)($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? 'piplio-account-key');
     }
     private function ownsProfile(int $parentId, int $profileId): bool { $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::PROFILE_TABLE); return (bool)$qb->select('uid')->from(self::PROFILE_TABLE)->where($qb->expr()->eq('uid', $qb->createNamedParameter($profileId, Connection::PARAM_INT)), $qb->expr()->eq('parent', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne(); }
     private function profilePayload(array $r): array { return ['id' => 'child_' . (int)$r['uid'], 'displayName' => (string)$r['display_name'], 'avatar' => (string)$r['avatar'], 'createdAt' => date(DATE_ATOM, (int)$r['crdate']), 'updatedAt' => date(DATE_ATOM, (int)$r['tstamp']), 'revision' => 0]; }
