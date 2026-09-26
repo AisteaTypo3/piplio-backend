@@ -154,7 +154,12 @@ final class AccountApiMiddleware implements MiddlewareInterface
 
     private function deleteProfile(int $profileId): JsonResponse
     {
-        $this->connection(self::PROFILE_TABLE)->update(self::PROFILE_TABLE, ['deleted' => 1, 'tstamp' => time()], ['uid' => $profileId]);
+        $connection = $this->connection(self::PROFILE_TABLE);
+        $connection->transactional(function (Connection $connection) use ($profileId): void {
+            $now = time();
+            $connection->update('tx_pipliobackend_progress', ['deleted' => 1, 'tstamp' => $now], ['profile' => $profileId]);
+            $connection->update(self::PROFILE_TABLE, ['deleted' => 1, 'tstamp' => $now], ['uid' => $profileId]);
+        });
         return $this->json(['ok' => true]);
     }
 
