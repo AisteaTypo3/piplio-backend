@@ -1,6 +1,6 @@
 <?php
 return [
-    'ctrl' => ['title' => 'Piplio Kinderprofil', 'label' => 'display_name', 'tstamp' => 'tstamp', 'crdate' => 'crdate', 'delete' => 'deleted', 'enablecolumns' => ['disabled' => 'hidden'], 'security' => ['ignorePageTypeRestriction' => true]],
+    'ctrl' => ['title' => 'Piplio Kinderprofil', 'label' => 'display_name', 'tstamp' => 'tstamp', 'crdate' => 'crdate', 'delete' => 'deleted', 'enablecolumns' => ['disabled' => 'hidden'], 'security' => ['ignorePageTypeRestriction' => true], 'typeicon_classes' => ['default' => 'status-user-frontend']],
     'columns' => [
         'hidden' => ['config' => ['type' => 'check', 'renderType' => 'checkboxToggle']],
         'parent' => ['label' => 'Elternkonto', 'config' => ['type' => 'select', 'renderType' => 'selectSingle', 'foreign_table' => 'tx_pipliobackend_parent', 'required' => true]],

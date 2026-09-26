@@ -1,6 +1,6 @@
 <?php
 return [
-    'ctrl' => ['title' => 'Piplio Lernstand', 'label' => 'profile', 'tstamp' => 'tstamp', 'crdate' => 'crdate', 'delete' => 'deleted', 'security' => ['ignorePageTypeRestriction' => true]],
+    'ctrl' => ['title' => 'Piplio Lernstand', 'label' => 'profile', 'tstamp' => 'tstamp', 'crdate' => 'crdate', 'delete' => 'deleted', 'security' => ['ignorePageTypeRestriction' => true], 'typeicon_classes' => ['default' => 'actions-graduation-cap']],
     'columns' => [
         'profile' => ['label' => 'Kinderprofil', 'config' => ['type' => 'select', 'renderType' => 'selectSingle', 'foreign_table' => 'tx_pipliobackend_childprofile', 'readOnly' => true]],
         'revision' => ['label' => 'Revision', 'config' => ['type' => 'number', 'readOnly' => true]],
