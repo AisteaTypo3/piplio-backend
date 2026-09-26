@@ -9,6 +9,8 @@ The extension provides:
 - a TYPO3 frontend plugin for a floating interest widget with TYPO3 lead storage
 - a protected API endpoint for app access
 - a CLI seed command for initial data
+- parent accounts with one-time email-code login
+- multiple child profiles and protected per-profile progress synchronization
 
 ## Features
 
@@ -126,6 +128,19 @@ After installing the package:
 3. Clear TYPO3 caches.
 4. Open Extension Settings and configure the API key.
 5. Configure `interestStoragePid` if leads should be stored on a dedicated sysfolder/page. If left at `0`, leads are stored on the page where the frontend plugin is placed.
+
+## Parent accounts and child profiles
+
+The private account API is available at `/api/piplio/auth/*` and
+`/api/piplio/profiles/*`. It stores parent accounts, child profiles and the JSON
+progress snapshot in TYPO3 tables. The complete request/response contract is in
+the mobile project at `docs/typo3-account-api-spec.md`.
+
+After installing the extension, run the TYPO3 database schema migration so the
+`tx_pipliobackend_parent`, `tx_pipliobackend_childprofile` and
+`tx_pipliobackend_progress` tables are created. Configure the site's mail transport;
+the one-time login code is sent through TYPO3's configured mailer and is never
+returned by the API.
 
 ## Extension Settings
 

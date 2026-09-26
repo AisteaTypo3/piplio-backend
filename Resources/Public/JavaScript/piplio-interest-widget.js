@@ -63,6 +63,9 @@
                 }
 
                 setFeedback(result.message || messageSuccess, 'success');
+                if (form.querySelector('[name="submissionMode"]')?.value === 'contact' && window.AisteaAnalytics?.goal) {
+                    window.AisteaAnalytics.goal('piplio_contact_sent');
+                }
                 form.reset();
                 if (toggle) {
                     toggle.checked = true;

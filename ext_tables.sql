@@ -104,3 +104,52 @@ CREATE TABLE tx_pipliobackend_badge (
     PRIMARY KEY (uid),
     UNIQUE KEY badge_id (badge_id)
 );
+
+CREATE TABLE tx_pipliobackend_parent (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    email varchar(255) NOT NULL DEFAULT '',
+    session_token_hash varchar(128) NOT NULL DEFAULT '',
+    session_expires int(11) NOT NULL DEFAULT 0,
+    login_code_hash varchar(128) NOT NULL DEFAULT '',
+    login_code_expires int(11) NOT NULL DEFAULT 0,
+    login_code_attempts int(11) NOT NULL DEFAULT 0,
+    login_code_sent_at int(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (uid),
+    UNIQUE KEY email (email),
+    KEY session_token_hash (session_token_hash),
+    KEY login_code_expires (login_code_expires)
+);
+
+CREATE TABLE tx_pipliobackend_childprofile (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    hidden tinyint(4) NOT NULL DEFAULT 0,
+    parent int(11) NOT NULL DEFAULT 0,
+    display_name varchar(80) NOT NULL DEFAULT '',
+    avatar varchar(32) NOT NULL DEFAULT 'rocket',
+    PRIMARY KEY (uid),
+    KEY parent (parent)
+);
+
+CREATE TABLE tx_pipliobackend_progress (
+    uid int(11) NOT NULL auto_increment,
+    pid int(11) NOT NULL DEFAULT 0,
+    tstamp int(11) NOT NULL DEFAULT 0,
+    crdate int(11) NOT NULL DEFAULT 0,
+    deleted tinyint(4) NOT NULL DEFAULT 0,
+    profile int(11) NOT NULL DEFAULT 0,
+    revision int(11) NOT NULL DEFAULT 0,
+    client_mutation_id varchar(80) NOT NULL DEFAULT '',
+    progress_data mediumtext,
+    PRIMARY KEY (uid),
+    UNIQUE KEY profile (profile),
+    KEY client_mutation_id (client_mutation_id)
+);
