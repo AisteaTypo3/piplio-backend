@@ -16,12 +16,17 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Mail\MailerInterface;
+use TYPO3\CMS\Core\RateLimiter\RateLimiterFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 final class AccountApiMiddleware implements MiddlewareInterface
 {
     private const PREFIX = '/api/piplio/';
     private const PROFILE_TABLE = 'tx_pipliobackend_childprofile';
+    private const SESSION_LIFETIME = 2592000;
+    private const SESSION_RENEW_BELOW = 2160000;
+    private const MAX_PROGRESS_BYTES = 1000000;
+    private const UNVERIFIED_RETENTION = 86400;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -41,36 +46,46 @@ final class AccountApiMiddleware implements MiddlewareInterface
             if ($path === self::PREFIX . 'auth/verify-code' && $method === 'POST') {
                 return $this->verifyCode($request);
             }
-            $parentId = $this->authenticate($request);
-            if ($parentId === null) {
+            $session = $this->authenticate($request);
+            if ($session === null) {
                 return $this->json(['error' => 'Unauthorized.'], 401);
             }
-            if ($path === self::PREFIX . 'account' && $method === 'DELETE') {
-                return $this->deleteAccount($parentId);
+            [$parentId, $expires] = $session;
+            $response = $this->handleAuthenticated($request, $path, $method, $parentId);
+            if ($response->getStatusCode() < 400 && $path !== self::PREFIX . 'account' && $expires - time() < self::SESSION_RENEW_BELOW) {
+                $response = $response->withHeader('X-Piplio-Session-Renewed', $this->issueToken($parentId, time() + self::SESSION_LIFETIME));
             }
-            if ($path === self::PREFIX . 'profiles' && $method === 'GET') {
-                return $this->listProfiles($parentId);
-            }
-            if ($path === self::PREFIX . 'profiles' && $method === 'POST') {
-                return $this->createProfile($request, $parentId);
-            }
-            if (preg_match('#^' . preg_quote(self::PREFIX, '#') . 'profiles/(\d+)$#', $path, $m) === 1) {
-                $profileId = (int)$m[1];
-                if (!$this->ownsProfile($parentId, $profileId)) {
-                    return $this->json(['error' => 'Profile not found.'], 404);
-                }
-                if ($method === 'PATCH') return $this->updateProfile($request, $profileId);
-                if ($method === 'DELETE') return $this->deleteProfile($profileId);
-            }
-            if (preg_match('#^' . preg_quote(self::PREFIX, '#') . 'profiles/(\d+)/progress$#', $path, $m) === 1) {
-                $profileId = (int)$m[1];
-                if (!$this->ownsProfile($parentId, $profileId)) return $this->json(['error' => 'Profile not found.'], 404);
-                if ($method === 'GET') return $this->getProgress($profileId);
-                if ($method === 'PUT') return $this->putProgress($request, $profileId);
-            }
+            return $response;
         } catch (\Throwable $e) {
             GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__)->error('Piplio account API failed.', ['exception' => $e]);
             return $this->json(['error' => 'Server error.'], 500);
+        }
+    }
+
+    private function handleAuthenticated(ServerRequestInterface $request, string $path, string $method, int $parentId): JsonResponse
+    {
+        if ($path === self::PREFIX . 'account' && $method === 'DELETE') {
+            return $this->deleteAccount($parentId);
+        }
+        if ($path === self::PREFIX . 'profiles' && $method === 'GET') {
+            return $this->listProfiles($parentId);
+        }
+        if ($path === self::PREFIX . 'profiles' && $method === 'POST') {
+            return $this->createProfile($request, $parentId);
+        }
+        if (preg_match('#^' . preg_quote(self::PREFIX, '#') . 'profiles/(\d+)$#', $path, $m) === 1) {
+            $profileId = (int)$m[1];
+            if (!$this->ownsProfile($parentId, $profileId)) {
+                return $this->json(['error' => 'Profile not found.'], 404);
+            }
+            if ($method === 'PATCH') return $this->updateProfile($request, $profileId);
+            if ($method === 'DELETE') return $this->deleteProfile($profileId);
+        }
+        if (preg_match('#^' . preg_quote(self::PREFIX, '#') . 'profiles/(\d+)/progress$#', $path, $m) === 1) {
+            $profileId = (int)$m[1];
+            if (!$this->ownsProfile($parentId, $profileId)) return $this->json(['error' => 'Profile not found.'], 404);
+            if ($method === 'GET') return $this->getProgress($profileId);
+            if ($method === 'PUT') return $this->putProgress($request, $profileId);
         }
         return $this->json(['error' => 'Not found.'], 404);
     }
@@ -79,7 +94,11 @@ final class AccountApiMiddleware implements MiddlewareInterface
     {
         $email = strtolower(trim((string)($this->body($request)['email'] ?? '')));
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return $this->json(['error' => 'Invalid email.'], 400);
+        if (!$this->consume($request, 'piplio-request-code-ip', 10, '1 hour') || !$this->consume($request, 'piplio-request-code-email', 5, '1 hour', $email)) {
+            return $this->json(['error' => 'Too many requests.', 'retryAfterSeconds' => 900], 429);
+        }
         $now = time();
+        $this->deleteUnverifiedParents($now, $email);
         $connection = $this->connection('tx_pipliobackend_parent');
         $row = $this->findParentByEmail($email);
         if ($row !== null && (int)$row['login_code_sent_at'] > $now - 60) {
@@ -115,18 +134,21 @@ final class AccountApiMiddleware implements MiddlewareInterface
         $body = $this->body($request);
         $email = strtolower(trim((string)($body['email'] ?? '')));
         $code = trim((string)($body['code'] ?? ''));
+        if (!$this->consume($request, 'piplio-verify-code-ip', 30, '15 minutes') || !$this->consume($request, 'piplio-verify-code-email', 10, '1 hour', $email)) {
+            return $this->json(['error' => 'Too many requests.', 'retryAfterSeconds' => 900], 429);
+        }
         $row = $this->findParentByEmail($email);
         $now = time();
         if ($row === null || (int)$row['login_code_expires'] < $now || (int)$row['login_code_attempts'] >= 5 || !password_verify($code, (string)$row['login_code_hash'])) {
             if ($row !== null) $this->connection('tx_pipliobackend_parent')->update('tx_pipliobackend_parent', ['login_code_attempts' => (int)$row['login_code_attempts'] + 1], ['uid' => (int)$row['uid']]);
             return $this->json(['error' => 'Invalid code.'], 401);
         }
-        $token = $this->issueToken((int)$row['uid'], $now + 2592000);
+        $token = $this->issueToken((int)$row['uid'], $now + self::SESSION_LIFETIME);
         $this->connection('tx_pipliobackend_parent')->update('tx_pipliobackend_parent', [
-            'tstamp' => $now, 'session_token_hash' => hash('sha512', $token), 'session_expires' => $now + 2592000,
+            'tstamp' => $now, 'session_token_hash' => hash('sha512', $token), 'session_expires' => $now + self::SESSION_LIFETIME,
             'login_code_hash' => '', 'login_code_expires' => 0, 'login_code_attempts' => 0,
         ], ['uid' => (int)$row['uid']]);
-        return $this->json(['accessToken' => $token, 'expiresIn' => 2592000, 'parent' => ['id' => 'parent_' . $row['uid'], 'email' => $email]]);
+        return $this->json(['accessToken' => $token, 'expiresIn' => self::SESSION_LIFETIME, 'parent' => ['id' => 'parent_' . $row['uid'], 'email' => $email]]);
     }
 
     private function listProfiles(int $parentId): JsonResponse
@@ -159,9 +181,8 @@ final class AccountApiMiddleware implements MiddlewareInterface
     {
         $connection = $this->connection(self::PROFILE_TABLE);
         $connection->transactional(function (Connection $connection) use ($profileId): void {
-            $now = time();
-            $connection->update('tx_pipliobackend_progress', ['deleted' => 1, 'tstamp' => $now], ['profile' => $profileId]);
-            $connection->update(self::PROFILE_TABLE, ['deleted' => 1, 'tstamp' => $now], ['uid' => $profileId]);
+            $connection->delete('tx_pipliobackend_progress', ['profile' => $profileId]);
+            $connection->delete(self::PROFILE_TABLE, ['uid' => $profileId]);
         });
         return $this->json(['ok' => true]);
     }
@@ -190,6 +211,7 @@ final class AccountApiMiddleware implements MiddlewareInterface
 
     private function putProgress(ServerRequestInterface $request, int $profileId): JsonResponse
     {
+        if (strlen((string)$request->getBody()) > self::MAX_PROGRESS_BYTES) return $this->json(['error' => 'Payload too large.'], 413);
         $body = $this->body($request); $data = $body['data'] ?? null; if (!is_array($data)) return $this->json(['error' => 'Invalid data.'], 400);
         $row = $this->progressRow($profileId); $base = (int)($body['baseRevision'] ?? 0); if ($row !== null && $base !== (int)$row['revision']) return $this->json(['error' => 'revision_conflict', 'current' => ['revision' => (int)$row['revision'], 'data' => json_decode((string)$row['progress_data'], true) ?: []]], 409);
         $revision = (int)($row['revision'] ?? 0) + 1; $now = time(); $fields = ['tstamp' => $now, 'revision' => $revision, 'client_mutation_id' => trim((string)($body['clientMutationId'] ?? '')), 'progress_data' => json_encode($data, JSON_THROW_ON_ERROR)];
@@ -197,7 +219,10 @@ final class AccountApiMiddleware implements MiddlewareInterface
         return $this->getProgress($profileId);
     }
 
-    private function authenticate(ServerRequestInterface $request): ?int
+    /**
+     * @return array{int, int}|null parent id and session expiry timestamp
+     */
+    private function authenticate(ServerRequestInterface $request): ?array
     {
         $token = trim($request->getHeaderLine('X-Piplio-Session'));
         if ($token === '') {
@@ -209,16 +234,16 @@ final class AccountApiMiddleware implements MiddlewareInterface
             $token = preg_match('/^\s*Bearer\s+(.+)\s*$/i', $authorization, $m) ? trim($m[1]) : '';
         }
         if ($token === '') return null;
-        $signedParentId = $this->verifyToken($token);
-        if ($signedParentId !== null) return $signedParentId;
+        $signed = $this->verifyToken($token);
+        if ($signed !== null) return $signed;
         $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
-        $rows = $qb->select('uid', 'session_token_hash')->from('tx_pipliobackend_parent')
+        $rows = $qb->select('uid', 'session_token_hash', 'session_expires')->from('tx_pipliobackend_parent')
             ->where($qb->expr()->gt('session_expires', $qb->createNamedParameter(time(), Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))
             ->executeQuery()->fetchAllAssociative();
         $hash = hash('sha512', $token);
         foreach ($rows as $row) {
             $storedHash = trim((string)($row['session_token_hash'] ?? ''));
-            if ($storedHash !== '' && hash_equals($storedHash, $hash)) return (int)$row['uid'];
+            if ($storedHash !== '' && hash_equals($storedHash, $hash)) return [(int)$row['uid'], (int)$row['session_expires']];
         }
         return null;
     }
@@ -230,7 +255,10 @@ final class AccountApiMiddleware implements MiddlewareInterface
         return $payload . '.' . $signature;
     }
 
-    private function verifyToken(string $token): ?int
+    /**
+     * @return array{int, int}|null
+     */
+    private function verifyToken(string $token): ?array
     {
         $parts = explode('.', $token, 2);
         if (count($parts) !== 2) return null;
@@ -238,13 +266,33 @@ final class AccountApiMiddleware implements MiddlewareInterface
         if (!hash_equals(hash_hmac('sha256', $payload, $this->encryptionKey()), $signature)) return null;
         $decoded = json_decode((string)base64_decode(strtr($payload, '-_', '+/')), true);
         if (!is_array($decoded) || (int)($decoded['expires'] ?? 0) < time() || (int)($decoded['parentId'] ?? 0) < 1) return null;
-        return $this->parentExists((int)$decoded['parentId']) ? (int)$decoded['parentId'] : null;
+        return $this->parentExists((int)$decoded['parentId']) ? [(int)$decoded['parentId'], (int)$decoded['expires']] : null;
     }
 
     private function parentExists(int $parentId): bool
     {
         $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
         return (bool)$qb->select('uid')->from('tx_pipliobackend_parent')->where($qb->expr()->eq('uid', $qb->createNamedParameter($parentId, Connection::PARAM_INT)), $qb->expr()->eq('deleted', $qb->createNamedParameter(0, Connection::PARAM_INT)))->executeQuery()->fetchOne();
+    }
+
+    private function consume(ServerRequestInterface $request, string $id, int $limit, string $interval, ?string $key = null): bool
+    {
+        $factory = GeneralUtility::makeInstance(RateLimiterFactory::class);
+        $config = ['id' => $id, 'policy' => 'sliding_window', 'limit' => $limit, 'interval' => $interval];
+        $limiter = $key === null ? $factory->createRequestBasedLimiter($request, $config) : $factory->createLimiter($config, hash('sha256', $key));
+        return $limiter->consume()->isAccepted();
+    }
+
+    private function deleteUnverifiedParents(int $now, string $exceptEmail): void
+    {
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_pipliobackend_parent');
+        $qb->getRestrictions()->removeAll();
+        $qb->delete('tx_pipliobackend_parent')->where(
+            $qb->expr()->eq('session_expires', $qb->createNamedParameter(0, Connection::PARAM_INT)),
+            $qb->expr()->eq('session_token_hash', $qb->createNamedParameter('')),
+            $qb->expr()->lt('crdate', $qb->createNamedParameter($now - self::UNVERIFIED_RETENTION, Connection::PARAM_INT)),
+            $qb->expr()->neq('email', $qb->createNamedParameter($exceptEmail)),
+        )->executeStatement();
     }
 
     private function encryptionKey(): string
@@ -307,5 +355,5 @@ final class AccountApiMiddleware implements MiddlewareInterface
     }
     private function connection(string $table): Connection { return GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable($table); }
     private function body(ServerRequestInterface $request): array { $decoded = json_decode((string)$request->getBody(), true); return is_array($decoded) ? $decoded : []; }
-    private function json(array $data, int $status = 200): JsonResponse { return (new JsonResponse($data, $status))->withHeader('Cache-Control', 'no-store, private')->withHeader('Pragma', 'no-cache')->withHeader('Expires', '0')->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key, X-Piplio-Session')->withHeader('Access-Control-Max-Age', '86400'); }
+    private function json(array $data, int $status = 200): JsonResponse { return (new JsonResponse($data, $status))->withHeader('Cache-Control', 'no-store, private')->withHeader('Pragma', 'no-cache')->withHeader('Expires', '0')->withHeader('Access-Control-Allow-Origin', '*')->withHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Piplio-Api-Key, X-Piplio-Session')->withHeader('Access-Control-Expose-Headers', 'X-Piplio-Session-Renewed')->withHeader('Access-Control-Max-Age', '86400'); }
 }
